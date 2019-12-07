@@ -1,8 +1,7 @@
 import * as express from 'express';
 import * as _ from 'lodash';
 
-import {AudienceSegmentExternalFeedResource, AudienceSegmentResource} from '../../api/core/audiencesegment/AudienceSegmentInterface';
-import {PluginProperty} from '../../';
+import {AudienceSegmentExternalFeedResource} from '../../api/core/audiencesegment/AudienceSegmentInterface';
 import {BasePlugin, PropertiesWrapper} from '../common';
 import {
   ExternalSegmentConnectionRequest,
@@ -31,48 +30,31 @@ export abstract class AudienceFeedConnectorBasePlugin extends BasePlugin {
     this.initUserSegmentUpdate();
   }
 
-  async fetchAudienceSegment(feedId: string): Promise<AudienceSegmentResource> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/audience_segment_external_feeds/${feedId}/audience_segment`
-    );
-    this.logger.debug(
-      `Fetched External Segment: FeedId: ${feedId} - ${JSON.stringify(response.data)}`
-    );
-    return response.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchAudienceSegment() {
+    return this.apiSdk.fetchAudienceSegment;
   }
 
-  async fetchAudienceFeed(feedId: string): Promise<AudienceSegmentExternalFeedResource> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/audience_segment_external_feeds/${feedId}`
-    );
-    this.logger.debug(
-      `Fetched External Feed: ${feedId} - ${JSON.stringify(response.data)}`
-    );
-    return response.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchAudienceFeed() {
+    return this.apiSdk.fetchAudienceFeed;
   }
 
-  // Method to build an instance context
-  // To be overriden to get a cutom behavior
-
-  async fetchAudienceFeedProperties(feedId: string): Promise<PluginProperty[]> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/audience_segment_external_feeds/${feedId}/properties`
-    );
-    this.logger.debug(
-      `Fetched External Feed Properties: ${feedId} - ${JSON.stringify(
-        response.data
-      )}`
-    );
-    return response.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchAudienceFeedProperties() {
+    return this.apiSdk.fetchAudienceFeedProperties;
   }
 
   // This is a default provided implementation
   protected async instanceContextBuilder(feedId: string): Promise<AudienceFeedConnectorBaseInstanceContext> {
-    const audienceFeedP = this.fetchAudienceFeed(feedId);
-    const audienceFeedPropsP = this.fetchAudienceFeedProperties(feedId);
+    const audienceFeedP = this.apiSdk.fetchAudienceFeed(feedId);
+    const audienceFeedPropsP = this.apiSdk.fetchAudienceFeedProperties(feedId);
 
     const results = await Promise.all([audienceFeedP, audienceFeedPropsP]);
 

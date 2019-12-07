@@ -2,7 +2,6 @@ import * as express from 'express';
 import * as _ from 'lodash';
 import {BasePlugin, PropertiesWrapper} from '../../common';
 import {Creative} from '../../../api/core/creative';
-import {PluginProperty} from '../../../api/core/plugin/PluginPropertyInterface';
 import {EmailRenderRequest} from '../../../api/plugin/emailtemplaterenderer/EmailRendererRequestInterface';
 import {EmailRendererPluginResponse} from '../../../api/plugin/emailtemplaterenderer/EmailRendererPluginResponse';
 
@@ -22,37 +21,20 @@ export abstract class EmailRendererPlugin<T extends EmailRendererBaseInstanceCon
     this.setErrorHandler();
   }
 
-  // Helper to fetch the creative resource with caching
-  async fetchCreative(id: string, forceReload = false): Promise<Creative> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/creatives/${id}`,
-      undefined,
-      {'force-reload': forceReload}
-    );
-    this.logger.debug(
-      `Fetched Creative: ${id} - ${JSON.stringify(response.data)}`
-    );
-    return response.data;
+  /**
+   * Helper to fetch the creative resource with caching
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchCreative() {
+    return this.apiSdk.fetchCreative;
   }
 
-  // Method to build an instance context
-  // To be overriden to get a cutom behavior
-
-  async fetchCreativeProperties(id: string, forceReload = false): Promise<PluginProperty[]> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/creatives/${id}/renderer_properties`,
-      undefined,
-      {'force-reload': forceReload}
-    );
-    this.logger.debug(
-      `Fetched Email Templates Properties: ${id} - ${JSON.stringify(response.data)}`
-    );
-    return response.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchCreativeProperties() {
+    return this.apiSdk.fetchCreativeProperties;
   }
-
-  // Method to process an Activity Analysis
 
   // This is a default provided implementation
   protected async instanceContextBuilder(

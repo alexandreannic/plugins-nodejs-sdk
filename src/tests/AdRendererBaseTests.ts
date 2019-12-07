@@ -7,7 +7,7 @@ import {PropertiesWrapper} from '../mediarithmics';
 import {generateEncodedClickUrl} from '../mediarithmics/plugins/ad-renderer/utils/index';
 
 describe('Fetch DisplayAd API', () => {
-  let requestPromiseProx: sinon.SinonStub = sinon
+  const requestPromiseProx: sinon.SinonStub = sinon
     .stub()
     .returns(Promise.resolve('Yolo'));
 
@@ -80,7 +80,7 @@ describe('Fetch DisplayAd API', () => {
     const fakeCreativeId = '4255';
 
     // We try a call to the Gateway
-    plugin.fetchDisplayAdProperties(fakeCreativeId).then(() => {
+    plugin.apiSdk.fetchDisplayAdProperties(fakeCreativeId).then(() => {
       expect(requestPromiseProx.args[1][0].uri).to.be.eq(
         `${plugin.outboundPlatformUrl}/v1/creatives/${fakeCreativeId}/renderer_properties`
       );

@@ -573,8 +573,6 @@ describe('Test Example Handlebar Ad Renderer', function () {
                 expect(res.status).to.eq(200);
                 const headers = res.header['x-mics-display-context'];
 
-                console.log('Headers: ' + JSON.stringify(headers));
-
                 recommendations.data.proposals.map((prop, idx) => {
                   expect(
                     JSON.parse(headers).$clickable_contents[idx].item_id

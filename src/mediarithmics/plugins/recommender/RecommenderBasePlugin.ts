@@ -3,9 +3,7 @@ import * as _ from 'lodash';
 
 import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
 
-import {PluginProperty} from '../../api/core/plugin/PluginPropertyInterface';
-
-import {Catalog, RecommendationsWrapper} from '../../api/datamart';
+import {RecommendationsWrapper} from '../../api/datamart';
 
 import {RecommenderRequest} from '../../api/plugin/recommender/RecommenderRequestInterface';
 
@@ -27,46 +25,19 @@ export abstract class RecommenderPlugin extends BasePlugin {
     this.setErrorHandler();
   }
 
-  // Helper to fetch the activity analyzer resource with caching
-  async fetchRecommenderCatalogs(
-    recommenderId: string
-  ): Promise<Catalog[]> {
-    const recommenderCatalogsResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/recommenders/${
-        recommenderId
-      }/catalogs`
-    );
-    this.logger.debug(
-      `Fetched recommender catalogs: ${recommenderId} - ${JSON.stringify(
-        recommenderCatalogsResponse.data
-      )}`
-    );
-    return recommenderCatalogsResponse.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchRecommenderCatalogs() {
+    return this.apiSdk.fetchRecommenderCatalogs;
   }
 
-  // Method to build an instance context
-  // To be overriden to get a cutom behavior
-
-  // Helper to fetch the activity analyzer resource with caching
-  async fetchRecommenderProperties(
-    recommenderId: string
-  ): Promise<PluginProperty[]> {
-    const recommenderPropertyResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/recommenders/${
-        recommenderId
-      }/properties`
-    );
-    this.logger.debug(
-      `Fetched recommender Properties: ${recommenderId} - ${JSON.stringify(
-        recommenderPropertyResponse.data
-      )}`
-    );
-    return recommenderPropertyResponse.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchRecommenderProperties() {
+    return this.apiSdk.fetchRecommenderProperties;
   }
-
-  // Method to process an Activity Analysis
 
   // This is a default provided implementation
   protected async instanceContextBuilder(

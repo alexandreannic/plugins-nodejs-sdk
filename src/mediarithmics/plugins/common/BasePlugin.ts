@@ -1,5 +1,4 @@
 import * as express from 'express';
-import * as request from 'request';
 import * as rp from 'request-promise-native';
 import * as winston from 'winston';
 import * as bodyParser from 'body-parser';
@@ -34,10 +33,11 @@ import {
   UrlProperty
 } from '../../api/core/plugin/PluginPropertyInterface';
 
-import {flatMap, Index, obfuscateString, Option} from '../../utils';
+import {flatMap, Index, Option} from '../../utils';
 import {normalizeArray} from '../../utils/Normalizer';
 import {Compartment, DataListResponse} from '../../';
 import {Datamart} from '../../api/core/datamart/Datamart';
+import {ApiSdk} from '../../api/ApiSdk';
 
 export interface InitUpdateResponse {
   status: ResponseStatusCode;
@@ -121,11 +121,12 @@ export class PropertiesWrapper {
 }
 
 export abstract class BasePlugin {
+
   multiThread: boolean = false;
 
   // Default cache is now 10 min to give some breathing to the Gateway
   // Note: This will be private or completly remove in the next major release as a breaking change
-  // TODO: in 0.8.x+, make this private or remove it completly (this should no longer be overriden in plugin impl., 
+  // TODO: in 0.8.x+, make this private or remove it completly (this should no longer be overriden in plugin impl.,
   // or we should implement a minimum threshold pattern)
   INSTANCE_CONTEXT_CACHE_EXPIRATION: number = 600000;
 
@@ -133,7 +134,6 @@ export abstract class BasePlugin {
 
   gatewayHost: string;
   gatewayPort: number;
-  outboundPlatformUrl: string;
 
   proxyHost: string;
   proxyPort: number;
@@ -145,15 +145,13 @@ export abstract class BasePlugin {
 
   _transport: any = rp;
 
-  enableThrottling: boolean = false;// Log level update implementation
+  outboundPlatformUrl: string;
+
+  readonly apiSdk: ApiSdk;
 
   // The idea here is to add a random part in the instance cache expiration -> we add +0-10% variablity
 
-  constructor(enableThrottling = false) {
-
-    if (enableThrottling) {
-      this.enableThrottling = enableThrottling;
-    }
+  constructor(public enableThrottling = false, /* Log level update implementation*/) {
     const gatewayHost = process.env.GATEWAY_HOST;
     if (gatewayHost) {
       this.gatewayHost = gatewayHost;
@@ -211,6 +209,8 @@ export abstract class BasePlugin {
       worker_id: ''
     };
 
+    this.apiSdk = new ApiSdk(this.outboundPlatformUrl, () => this._transport, this.credentials, this.logger);
+
     this.initInitRoute();
     this.initStatusRoute();
     this.initLogLevelUpdateRoute();
@@ -230,81 +230,18 @@ export abstract class BasePlugin {
     this.logger.level = logLevel;
   }
 
-  fetchDataFile(uri: string): Promise<Buffer> {
-    return this.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/data_file/data`,
-      undefined,
-      {uri: uri},
-      false,
-      true
-    );
-  }
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchDataFile() {
+    return this.apiSdk.fetchDataFile;
+  };
 
-  // Log level update implementation
-
-  fetchConfigurationFile(fileName: string): Promise<Buffer> {
-    return this.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/configuration/technical_name=${fileName}`,
-      undefined,
-      undefined,
-      false,
-      true
-    );
-  }
-
-  async requestGatewayHelper(method: string,
-    uri: string,
-    body?: any,
-    qs?: any,
-    isJson?: boolean,
-    isBinary?: boolean): Promise<any> {
-    let options: request.OptionsWithUri = {
-      method: method,
-      uri: uri,
-      auth: {
-        user: this.credentials.worker_id,
-        pass: this.credentials.authentication_token,
-        sendImmediately: true
-      },
-      proxy: false
-    };
-
-    // Set the body if provided
-    options.body = body !== undefined ? body : undefined;
-
-    // Set the querystring if provided
-    options.qs = qs !== undefined ? qs : undefined;
-
-    // Set the json flag if provided
-    options.json = isJson !== undefined ? isJson : true;
-
-    // Set the encoding to null if it is binary
-    options.encoding = isBinary !== undefined && isBinary ? null : undefined;
-
-    this.logger.silly(`Doing gateway call with ${JSON.stringify(options)}`);
-
-    try {
-      return await this._transport(options);
-    } catch (e) {
-      if (e.name === 'StatusCodeError') {
-        const bodyString =
-          isJson !== undefined && !isJson ? body : JSON.stringify(body);
-        throw new Error(
-          `Error while calling ${method} '${uri}' with the request body '${bodyString ||
-          ''}', the qs '${JSON.stringify(qs) || ''}', the auth user '${obfuscateString(options.auth ? options.auth.user : undefined) || ''}', the auth password '${obfuscateString(
-            options.auth ? options.auth.pass : undefined) || ''}': got a ${e.response.statusCode} ${
-            e.response.statusMessage
-          } with the response body ${JSON.stringify(e.response.body)}`
-        );
-      } else {
-        this.logger.error(
-          `Got an issue while doing a Gateway call: ${e.message} - ${e.stack}`
-        );
-        throw e;
-      }
-    }
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchConfigurationFile() {
+    return this.apiSdk.fetchConfigurationFile;
   }
 
   // Health Status implementation

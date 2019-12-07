@@ -3,8 +3,6 @@ import * as _ from 'lodash';
 
 import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
 
-import {PluginProperty} from '../../api/core/plugin/PluginPropertyInterface';
-
 import {ActivityAnalyzer, ActivityAnalyzerPluginResponse, ActivityAnalyzerRequest,} from './ActivityAnalyzerInterface';
 
 export interface ActivityAnalyzerBaseInstanceContext {
@@ -22,67 +20,35 @@ export abstract class ActivityAnalyzerPlugin extends BasePlugin {
     this.setErrorHandler();
   }
 
-  // Helper to fetch the activity analyzer resource with caching
-  async fetchActivityAnalyzer(
-    activityAnalyzerId: string
-  ): Promise<ActivityAnalyzer> {
-    const activityAnalyzerResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/activity_analyzers/${activityAnalyzerId}`
-    );
-    this.logger.debug(
-      `Fetched Activity Analyzer: ${activityAnalyzerId} - ${JSON.stringify(
-        activityAnalyzerResponse.data
-      )}`
-    );
-    return activityAnalyzerResponse.data;
+  /**
+   * Helper to fetch the activity analyzer resource with caching
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchActivityAnalyzer() {
+    return this.apiSdk.fetchActivityAnalyzer;
   }
 
-  // Method to build an instance context
-  // To be overriden to get a cutom behavior
-
-  // Helper to fetch the activity analyzer resource with caching
-  async fetchActivityAnalyzerProperties(
-    activityAnalyzerId: string
-  ): Promise<PluginProperty[]> {
-    const activityAnalyzerPropertyResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/activity_analyzers/${
-        activityAnalyzerId
-      }/properties`
-    );
-    this.logger.debug(
-      `Fetched Activity Analyzer Properties: ${activityAnalyzerId} - ${JSON.stringify(
-        activityAnalyzerPropertyResponse.data
-      )}`
-    );
-    return activityAnalyzerPropertyResponse.data;
+  /**
+   * Helper to fetch the activity analyzer resource with caching
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchActivityAnalyzerProperties() {
+    return this.apiSdk.fetchActivityAnalyzerProperties;
   }
-
-  // Method to process an Activity Analysis
 
   // This is a default provided implementation
   protected async instanceContextBuilder(
     activityAnalyzerId: string
   ): Promise<ActivityAnalyzerBaseInstanceContext> {
-    const activityAnalyzerP = this.fetchActivityAnalyzer(activityAnalyzerId);
-    const activityAnalyzerPropsP = this.fetchActivityAnalyzerProperties(
-      activityAnalyzerId
-    );
-
-    const results = await Promise.all([
-      activityAnalyzerP,
-      activityAnalyzerPropsP
+    const [activityAnalyzer, activityAnalyzerProps] = await Promise.all([
+      this.apiSdk.fetchActivityAnalyzer(activityAnalyzerId),
+      this.apiSdk.fetchActivityAnalyzerProperties(activityAnalyzerId),
     ]);
-
-    const activityAnalyzer = results[0];
-    const activityAnalyzerProps = results[1];
 
     return {
       properties: new PropertiesWrapper(activityAnalyzerProps),
       activityAnalyzer: activityAnalyzer
     };
-
   }
 
   // To be overriden by the Plugin to get a custom behavior

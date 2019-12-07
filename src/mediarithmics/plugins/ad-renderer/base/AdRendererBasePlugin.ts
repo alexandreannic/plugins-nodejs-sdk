@@ -4,7 +4,6 @@ import * as jsesc from 'jsesc';
 
 import {BasePlugin, PropertiesWrapper} from '../../common/BasePlugin';
 import {DisplayAd} from '../../../api/core/creative/index';
-import {PluginProperty} from '../../../api/core/plugin/PluginPropertyInterface';
 import {AdRendererPluginResponse, AdRendererRequest, ClickUrlInfo} from './AdRendererInterface';
 import {generateEncodedClickUrl} from '../utils/index';
 
@@ -24,55 +23,23 @@ export abstract class AdRendererBasePlugin<T extends AdRendererBaseInstanceConte
     this.setErrorHandler();
   }
 
-  // Helper to fetch the Display Ad resource with caching
-  async fetchDisplayAd(displayAdId: string, forceReload = false): Promise<DisplayAd> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/creatives/${displayAdId}`,
-      undefined,
-      {'force-reload': forceReload}
-    );
-
-    this.logger.debug(
-      `Fetched Creative: ${displayAdId} - ${JSON.stringify(response.data)}`
-    );
-
-    if ((response.data as DisplayAd).type !== 'DISPLAY_AD') {
-      throw new Error(
-        `crid: ${
-          displayAdId
-        } - When fetching DisplayAd, another creative type was returned!`
-      );
-    }
-
-    return response.data;
+  /**
+   * Helper to fetch the Display Ad resource with caching
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchDisplayAd() {
+    return this.apiSdk.fetchDisplayAd;
   }
 
-  // Helper to fetch the Display Ad properties resource with caching
-  async fetchDisplayAdProperties(
-    displayAdId: string,
-    forceReload = false
-  ): Promise<PluginProperty[]> {
-    const creativePropertyResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/creatives/${
-        displayAdId
-      }/renderer_properties`,
-      undefined,
-      {'force-reload': forceReload}
-    );
-
-    this.logger.debug(
-      `Fetched Creative Properties: ${displayAdId} - ${JSON.stringify(
-        creativePropertyResponse.data
-      )}`
-    );
-
-    return creativePropertyResponse.data;
+  /**
+   * Helper to fetch the Display Ad properties resource with caching
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchDisplayAdProperties() {
+    return this.apiSdk.fetchDisplayAdProperties;
   }
 
   // Method to build an instance context
-
   getEncodedClickUrl(redirectUrls: ClickUrlInfo[]) {
     return generateEncodedClickUrl(redirectUrls);
   }

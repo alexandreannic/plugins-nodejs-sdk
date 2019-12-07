@@ -107,12 +107,12 @@ describe('Plugin log level API tests', function () {
 });
 
 describe('Request Gateway helper API tests', function () {
-  let rpMockup: sinon.SinonStub = sinon.stub().returns(Promise.resolve('YOLO'));
+  const rpMockup: sinon.SinonStub = sinon.stub().returns(Promise.resolve('YOLO'));
 
   class MyFakePlugin extends core.BasePlugin {
   }
 
-  it('Check that uri is passed correctly', function (done) {
+  it('Check that uri is passed correctly', async function () {
     const plugin = new MyFakePlugin(false);
     const runner = new core.TestingPluginRunner(plugin, rpMockup);
 
@@ -120,10 +120,9 @@ describe('Request Gateway helper API tests', function () {
     const fakeMethod = 'GET';
 
     // We try a call to the Gateway
-    runner.plugin.requestGatewayHelper('GET', fakeUri).then(() => {
+    await runner.plugin.apiSdk.client.request('GET', fakeUri).then(() => {
       expect(rpMockup.args[0][0].method).to.be.eq(fakeMethod);
-      expect(rpMockup.args[0][0].uri).to.be.eq(fakeUri);
-      done();
+      expect(rpMockup.args[0][0].uri).to.be.eq(plugin.outboundPlatformUrl + fakeUri);
     });
   });
 
@@ -144,8 +143,7 @@ describe('Request Gateway helper API tests', function () {
         expect(res.status).to.equal(200);
 
         // We try a call to the Gateway
-        runner.plugin
-          .requestGatewayHelper('GET', '/v1/easter_eggs/')
+        runner.plugin.apiSdk.client.request('GET', '/v1/easter_eggs/')
           .then(() => {
             expect(rpMockup.args[1][0].auth.pass).to.be.eq(authenticationToken);
             expect(rpMockup.args[1][0].auth.user).to.be.eq(workerId);
@@ -163,9 +161,9 @@ describe('Request Gateway helper API tests', function () {
     const fakeBody = {sucess: true};
 
     // We try a call to the Gateway
-    runner.plugin.requestGatewayHelper('GET', fakeUri, fakeBody).then(() => {
+    runner.plugin.apiSdk.client.request('GET', fakeUri, fakeBody).then(() => {
       expect(rpMockup.args[2][0].method).to.be.eq(fakeMethod);
-      expect(rpMockup.args[2][0].uri).to.be.eq(fakeUri);
+      expect(rpMockup.args[2][0].uri).to.be.eq(plugin.outboundPlatformUrl + fakeUri);
       expect(rpMockup.args[2][0].body).to.be.eq(fakeBody);
       done();
     });
@@ -198,7 +196,7 @@ describe('Data File helper Tests', function () {
       .send({authentication_token: authenticationToken, worker_id: workerId})
       .end((err, res) => {
         // We try a call to the Gateway
-        runner.plugin.fetchDataFile(fakeDataFileURI).then(file => {
+        runner.plugin.apiSdk.fetchDataFile(fakeDataFileURI).then(file => {
           expect(rpMockup.args[0][0].method).to.be.eq(method);
           expect(rpMockup.args[0][0].uri).to.be.eq(`http://${runner.plugin.gatewayHost}:${runner.plugin.gatewayPort}${dataFileGatewayURI}`);
           expect(rpMockup.args[0][0].qs['uri']).to.be.eq(fakeDataFileURI);
@@ -251,5 +249,4 @@ describe('Instance Context Expiration Tests', function () {
     expect(refreshInterval).to.be.lte(plugin.INSTANCE_CONTEXT_CACHE_EXPIRATION * 1.1);
     done();
   });
-
 });

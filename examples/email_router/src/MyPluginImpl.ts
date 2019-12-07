@@ -78,13 +78,11 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
     identifier: core.UserEmailIdentifierInfo,
     payload: MailjetPayload
   ): Promise<MailjetSentResponse> {
-    this.logger.debug(
-      `Sending email to: request: ${JSON.stringify(
-        request
-      )} - identifier: ${JSON.stringify(
-        identifier
-      )} - payload: ${JSON.stringify(payload)}`
-    );
+    this.logger.debug(`
+      Sending email to: request: ${JSON.stringify(request)} 
+      - identifier: ${JSON.stringify(identifier)} 
+      - payload: ${JSON.stringify(payload)}
+    `);
 
     const emailHeaders = {
       'Reply-To': request.meta.reply_to
@@ -106,14 +104,7 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
       'Mj-campaign': request.campaign_id
     };
 
-    const mailjetResponse: MailjetSentResponse = await this.requestGatewayHelper(
-      'POST',
-      `${
-        this.outboundPlatformUrl
-      }/v1/external_services/technical_name=mailjet/call`,
-      emailData
-    );
-
+    const mailjetResponse: MailjetSentResponse = await this.apiSdk.sendEmail(emailData);
     if (mailjetResponse.Sent.length === 0) {
       this.logger.error('Mailjet sent an empty response, will retry');
       throw new Error('Mailjet sent an empty response, will retry');
@@ -350,10 +341,7 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
       const operation = retry.operation();
       operation.attempt(async attempt => {
         try {
-          this.logger.debug(
-            `Trying to call for the ${attempt}th time ${mainFn.name}`
-          );
-
+          this.logger.debug(`Trying to call for the ${attempt}th time ${mainFn.name}`);
           const response = await mainFn.apply(this, args);
           resolve(response);
         } catch (err) {
@@ -428,11 +416,6 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
       this.sendEmail,
       [request, identifier, payload]
     );
-
-    if (mailjetResponse.Sent.length > 0) {
-      return {result: true};
-    } else {
-      return {result: false};
-    }
+    return {result: mailjetResponse.Sent.length > 0};
   }
 }
