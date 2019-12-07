@@ -2,7 +2,6 @@ import * as express from 'express';
 import * as _ from 'lodash';
 import {BasePlugin, PropertiesWrapper} from '../common';
 import {BidOptimizer} from '../../api/core/bidoptimizer/BidOptimizerInterface';
-import {PluginProperty} from '../../api/core/plugin/PluginPropertyInterface';
 import {BidOptimizerRequest, SaleCondition} from '../../api/plugin/bidoptimizer/BidOptimizerRequestInterface';
 import {BidDecision} from '../../api/plugin/bidoptimizer/BidDecision';
 
@@ -24,42 +23,17 @@ export abstract class BidOptimizerPlugin extends BasePlugin {
   }
 
   /**
-   *
-   * @param bidOptimizerId
+   * @deprecated Call it through apiSdk instead
    */
-  async fetchBidOptimizer(bidOptimizerId: string): Promise<BidOptimizer> {
-    const bidOptimizerResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/bid_optimizers/${bidOptimizerId}`
-    );
-    this.logger.debug(
-      `Fetched Bid Optimizer: ${bidOptimizerId} - ${JSON.stringify(
-        bidOptimizerResponse.data
-      )}`
-    );
-    return bidOptimizerResponse.data;
+  get fetchBidOptimizer() {
+    return this.apiSdk.fetchBidOptimizer;
   }
 
   /**
-   *
-   * @param bidOptimizerId
+   * @deprecated Call it through apiSdk instead
    */
-
-  async fetchBidOptimizerProperties(
-    bidOptimizerId: string
-  ): Promise<PluginProperty[]> {
-    const bidOptimizerPropertyResponse = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/bid_optimizers/${
-        bidOptimizerId
-      }/properties`
-    );
-    this.logger.debug(
-      `Fetched BidOptimizer Properties: ${bidOptimizerId} - ${JSON.stringify(
-        bidOptimizerPropertyResponse.data
-      )}`
-    );
-    return bidOptimizerPropertyResponse.data;
+  get fetchBidOptimizerProperties() {
+    return this.apiSdk.fetchBidOptimizerProperties;
   }
 
   findBestSalesConditions(

@@ -150,7 +150,7 @@ describe('Fetch recommendation API', () => {
 
     // We try a call to the Gateway
     (runner.plugin as MyDummyHandlebarsAdRenderer)
-      .fetchRecommendations(fakeInstanceContext, fakeUserAgentId)
+      .apiSdk.fetchRecommendations(fakeInstanceContext, fakeUserAgentId)
       .then(() => {
         expect(rpMockup.args[0][0].uri).to.be.eq(
           `${plugin.outboundPlatformUrl}/v1/recommenders/${fakeInstanceContext.recommender_id}/recommendations`
@@ -170,7 +170,7 @@ describe('Fetch recommendation API', () => {
 
     // We try a call to the Gateway
     (runner.plugin as MyDummyHandlebarsAdRenderer)
-      .fetchRecommendations(fakeInstanceContext, fakeUserAgentId)
+      .apiSdk.fetchRecommendations(fakeInstanceContext, fakeUserAgentId)
       .then((proposals: Array<core.ItemProposal>) => {
         expect(proposals[0]).to.deep.eq(
           fakeRecommenderResponse.data.proposals[0]

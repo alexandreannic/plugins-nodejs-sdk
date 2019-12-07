@@ -1,7 +1,6 @@
 import * as express from 'express';
 import * as _ from 'lodash';
 import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
-import {PluginProperty} from '../../api/core/plugin/PluginPropertyInterface';
 import {CheckEmailsRequest, EmailRoutingRequest} from '../../api/plugin/emailtemplaterouter/EmailRouterRequestInterface';
 
 
@@ -29,20 +28,11 @@ export abstract class EmailRouterPlugin extends BasePlugin {
     this.setErrorHandler();
   }
 
-  // Method to build an instance context
-  // To be overriden to get a cutom behavior
-
-  async fetchEmailRouterProperties(id: string): Promise<PluginProperty[]> {
-    const response = await super.requestGatewayHelper(
-      'GET',
-      `${this.outboundPlatformUrl}/v1/email_routers/${id}/properties`
-    );
-    this.logger.debug(
-      `Fetched Email Router Properties: ${id} - ${JSON.stringify(
-        response.data
-      )}`
-    );
-    return response.data;
+  /**
+   * @deprecated Call it through apiSdk instead
+   */
+  get fetchEmailRouterProperties() {
+    return this.apiSdk.fetchEmailRouterProperties;
   }
 
   // This is a default provided implementation
@@ -90,19 +80,11 @@ export abstract class EmailRouterPlugin extends BasePlugin {
       this.asyncMiddleware(
         async (req: express.Request, res: express.Response) => {
           if (!req.body || _.isEmpty(req.body)) {
-            const msg = {
-              error: 'Missing request body'
-            };
-            this.logger.error(
-              'POST /v1/email_routing : %s',
-              JSON.stringify(msg)
-            );
+            const msg = {error: 'Missing request body'};
+            this.logger.error('POST /v1/email_routing : %s', JSON.stringify(msg));
             return res.status(500).json(msg);
           } else {
-            this.logger.debug(
-              `POST /v1/email_routing ${JSON.stringify(req.body)}`
-            );
-
+            this.logger.debug(`POST /v1/email_routing ${JSON.stringify(req.body)}`);
             const emailRoutingRequest = req.body as EmailRoutingRequest;
 
             if (!this.onEmailRouting) {
@@ -111,13 +93,8 @@ export abstract class EmailRouterPlugin extends BasePlugin {
               return res.status(500).json({error: errMsg});
             }
 
-            const instanceContext = await this.getInstanceContext(
-              emailRoutingRequest.email_router_id
-            );
-            const pluginResponse = await this.onEmailRouting(
-              emailRoutingRequest,
-              instanceContext
-            );
+            const instanceContext = await this.getInstanceContext(emailRoutingRequest.email_router_id);
+            const pluginResponse = await this.onEmailRouting(emailRoutingRequest, instanceContext);
 
             this.logger.debug(`Returning: ${JSON.stringify(pluginResponse)}`);
             res.status(200).send(JSON.stringify(pluginResponse));
