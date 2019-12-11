@@ -1,7 +1,6 @@
 import {expect} from 'chai';
 import 'mocha';
-import {core} from '@mediarithmics/plugins-nodejs-sdk';
-import * as request from 'supertest';
+import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
 import {MyBidOptimizerPlugin} from '../MyPluginImpl';
 
 describe('Test Example BidOptimizer', function () {
@@ -115,37 +114,16 @@ describe('Test Example BidOptimizer', function () {
             ]
          }`);
 
-  it('Check behavior of dummy bid optimizer', function (done) {
+  it('Check behavior of dummy bid optimizer', async function () {
     const plugin = new MyBidOptimizerPlugin({gatewaySdk: mocks});
-
-    // Plugin init
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        // Plugin log level to debug
-        request(plugin.app)
-          .put('/v1/log_level')
-          .send({level: 'debug'})
-          .end((err, res) => {
-            expect(res.status).to.equal(200);
-
-            // Activity to process
-            request(plugin.app)
-              .post('/v1/bid_decisions')
-              .send(bidDecisionRequest)
-              .end((err, res) => {
-                expect(res.status).to.eq(200);
-                expect(
-                  (JSON.parse(res.text) as core.BidOptimizerPluginResponse).bids[0].bid_price
-                ).to.be.eq(
-                  bidDecisionRequest.campaign_info.max_bid_price
-                );
-                done();
-              });
-          });
-      });
+    const tester = new helper.PluginApiTester(plugin);
+    await tester.initPlugin('debug');
+    const res = await tester.post('/v1/bid_decisions', bidDecisionRequest);
+    expect(res.status).to.eq(200);
+    expect(
+      (JSON.parse(res.text) as core.BidOptimizerPluginResponse).bids[0].bid_price
+    ).to.be.eq(
+      bidDecisionRequest.campaign_info.max_bid_price
+    );
   });
 });
