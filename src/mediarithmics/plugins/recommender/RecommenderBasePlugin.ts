@@ -1,7 +1,7 @@
 import * as express from 'express';
 import * as _ from 'lodash';
 
-import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../common/BasePlugin';
 
 import {RecommendationsWrapper} from '../../api/datamart';
 
@@ -17,26 +17,11 @@ export interface RecommenderPluginResponse extends RecommendationsWrapper {
 export abstract class RecommenderPlugin extends BasePlugin {
   instanceContext: Promise<RecommenderBaseInstanceContext>;
 
-  constructor() {
-    super();
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     // We init the specific route to listen for activity analysis requests
     this.initRecommendationRequest();
     this.setErrorHandler();
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchRecommenderCatalogs() {
-    return this.apiSdk.fetchRecommenderCatalogs;
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchRecommenderProperties() {
-    return this.apiSdk.fetchRecommenderProperties;
   }
 
   // This is a default provided implementation
@@ -44,7 +29,7 @@ export abstract class RecommenderPlugin extends BasePlugin {
     recommenderId: string
   ): Promise<RecommenderBaseInstanceContext> {
 
-    const recommenderProps = await this.fetchRecommenderProperties(
+    const recommenderProps = await this.gatewaySdk.fetchRecommenderProperties(
       recommenderId
     );
 

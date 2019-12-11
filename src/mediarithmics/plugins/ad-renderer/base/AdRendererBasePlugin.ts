@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as _ from 'lodash';
 import * as jsesc from 'jsesc';
 
-import {BasePlugin, PropertiesWrapper} from '../../common/BasePlugin';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../../common/BasePlugin';
 import {DisplayAd} from '../../../api/core/creative/index';
 import {AdRendererPluginResponse, AdRendererRequest, ClickUrlInfo} from './AdRendererInterface';
 import {generateEncodedClickUrl} from '../utils/index';
@@ -14,29 +14,12 @@ export class AdRendererBaseInstanceContext {
 
 export abstract class AdRendererBasePlugin<T extends AdRendererBaseInstanceContext> extends BasePlugin {
 
-  displayContextHeader = 'x-mics-display-context';
+  readonly displayContextHeader = 'x-mics-display-context';
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     this.initAdContentsRoute();
     this.setErrorHandler();
-  }
-
-  /**
-   * Helper to fetch the Display Ad resource with caching
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchDisplayAd() {
-    return this.apiSdk.fetchDisplayAd;
-  }
-
-  /**
-   * Helper to fetch the Display Ad properties resource with caching
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchDisplayAdProperties() {
-    return this.apiSdk.fetchDisplayAdProperties;
   }
 
   // Method to build an instance context
@@ -47,8 +30,8 @@ export abstract class AdRendererBasePlugin<T extends AdRendererBaseInstanceConte
   // To be overriden to get a custom behavior
   protected async instanceContextBuilder(creativeId: string, forceReload = false): Promise<T> {
 
-    const displayAdP = this.fetchDisplayAd(creativeId, forceReload);
-    const displayAdPropsP = this.fetchDisplayAdProperties(creativeId, forceReload);
+    const displayAdP = this.gatewaySdk.fetchDisplayAd(creativeId, forceReload);
+    const displayAdPropsP = this.gatewaySdk.fetchDisplayAdProperties(creativeId, forceReload);
 
     const results = await Promise.all([displayAdP, displayAdPropsP]);
 

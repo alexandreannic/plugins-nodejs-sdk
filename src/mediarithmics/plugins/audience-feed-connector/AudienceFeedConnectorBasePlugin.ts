@@ -2,7 +2,7 @@ import * as express from 'express';
 import * as _ from 'lodash';
 
 import {AudienceSegmentExternalFeedResource} from '../../api/core/audiencesegment/AudienceSegmentInterface';
-import {BasePlugin, PropertiesWrapper} from '../common';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../common';
 import {
   ExternalSegmentConnectionRequest,
   ExternalSegmentCreationRequest,
@@ -22,39 +22,17 @@ export interface AudienceFeedConnectorBaseInstanceContext {
 
 export abstract class AudienceFeedConnectorBasePlugin extends BasePlugin {
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     this.initExternalSegmentCreation();
     this.initExternalSegmentConnection();
     this.initUserSegmentUpdate();
   }
 
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchAudienceSegment() {
-    return this.apiSdk.fetchAudienceSegment;
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchAudienceFeed() {
-    return this.apiSdk.fetchAudienceFeed;
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchAudienceFeedProperties() {
-    return this.apiSdk.fetchAudienceFeedProperties;
-  }
-
   // This is a default provided implementation
   protected async instanceContextBuilder(feedId: string): Promise<AudienceFeedConnectorBaseInstanceContext> {
-    const audienceFeedP = this.apiSdk.fetchAudienceFeed(feedId);
-    const audienceFeedPropsP = this.apiSdk.fetchAudienceFeedProperties(feedId);
+    const audienceFeedP = this.gatewaySdk.fetchAudienceFeed(feedId);
+    const audienceFeedPropsP = this.gatewaySdk.fetchAudienceFeedProperties(feedId);
 
     const results = await Promise.all([audienceFeedP, audienceFeedPropsP]);
 

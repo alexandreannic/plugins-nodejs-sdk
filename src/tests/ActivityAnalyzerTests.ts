@@ -2,16 +2,17 @@ import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
 import * as request from 'supertest';
-import * as sinon from 'sinon';
+import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
+import {IActivityAnalyzerSdk} from '../mediarithmics/api/sdk/GatewaySdk';
 
 describe('Fetch analyzer API', () => {
+
   class MyFakeActivityAnalyzerPlugin extends core.ActivityAnalyzerPlugin {
     protected onActivityAnalysis(
       request: core.ActivityAnalyzerRequest,
       instanceContext: core.ActivityAnalyzerBaseInstanceContext
     ) {
       const updatedActivity = request.activity;
-
       // We add a field on the processed activitynégative
       updatedActivity.processed_by = `${instanceContext.activityAnalyzer
         .group_id}:${instanceContext.activityAnalyzer
@@ -27,53 +28,32 @@ describe('Fetch analyzer API', () => {
     }
   }
 
-  const rpMockup: sinon.SinonStub = sinon.stub().returns(
-    new Promise((resolve, reject) => {
-      resolve('Yolo');
-    })
-  );
-
-  // All the magic is here
-  const plugin = new MyFakeActivityAnalyzerPlugin(false);
-  const runner = new core.TestingPluginRunner(plugin, rpMockup);
-
-  it('Check that ActivityAnalyzerId is passed correctly in FetchActivityAnalyzer', function (
-    done
-  ) {
-    const fakeActivityAnalyzerId = '42000000';
-
-    // We try a call to the Gateway
-    (runner.plugin as MyFakeActivityAnalyzerPlugin).fetchActivityAnalyzer(fakeActivityAnalyzerId).then(() => {
-      expect(rpMockup.args[0][0].uri).to.be.eq(
-        `${runner.plugin.outboundPlatformUrl}/v1/activity_analyzers/${fakeActivityAnalyzerId}`
-      );
-      done();
-    });
+  const gatewayMock = newGatewaySdkMock<IActivityAnalyzerSdk>({
+    fetchActivityAnalyzer: Promise.resolve({} as any),
+    fetchActivityAnalyzerProperties: Promise.resolve({} as any),
   });
 
-  it('Check that ActivityAnalyzerId is passed correctly in FetchActivityAnalyzerProperties', function (
-    done
-  ) {
-    const fakeActivityAnalyzerId = '4255';
+  const plugin = new MyFakeActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
 
-    // We try a call to the Gateway
-    (runner.plugin as MyFakeActivityAnalyzerPlugin).fetchActivityAnalyzerProperties(fakeActivityAnalyzerId).then(() => {
-      expect(rpMockup.args[1][0].uri).to.be.eq(
-        `${plugin.outboundPlatformUrl}/v1/activity_analyzers/${fakeActivityAnalyzerId}/properties`
-      );
-      done();
-    });
+  it('Check that ActivityAnalyzerId is passed correctly in FetchActivityAnalyzer', async function () {
+    const fakeActivityAnalyzerId = '42000000';
+    await plugin.gatewaySdk.fetchActivityAnalyzer(fakeActivityAnalyzerId);
+    expect(gatewayMock.calledMethods.fetchActivityAnalyzer.calledTime() > 0);
+  });
+
+  it('Check that ActivityAnalyzerId is passed correctly in FetchActivityAnalyzerProperties', async function () {
+    const fakeActivityAnalyzerId = '4255';
+    await plugin.gatewaySdk.fetchActivityAnalyzerProperties(fakeActivityAnalyzerId);
+    expect(gatewayMock.calledMethods.fetchActivityAnalyzerProperties.calledTime() > 0);
   });
 
   afterEach(() => {
     // We clear the cache so that we don't have any processing still running in the background
-    runner.plugin.pluginCache.clear();
+    plugin.pluginCache.clear();
   });
 });
 
 describe('Activity Analysis API test', function () {
-
-  let runner: core.TestingPluginRunner;
 
   class MyFakeSimpleActivityAnalyzerPlugin extends core.ActivityAnalyzerPlugin {
     protected onActivityAnalysis(
@@ -88,56 +68,34 @@ describe('Activity Analysis API test', function () {
     }
   }
 
-  // All the magic is here
-  const plugin = new MyFakeSimpleActivityAnalyzerPlugin(false);
+  const gatewayMock = newGatewaySdkMock<IActivityAnalyzerSdk>({
+    fetchActivityAnalyzer: Promise.resolve({
+      id: '42',
+      organisation_id: '1001',
+      name: 'Yolo',
+      group_id: '5445',
+      artifact_id: '5441',
+      visit_analyzer_plugin_id: 555777
+    }),
+    fetchActivityAnalyzerProperties: Promise.resolve([
+      {
+        technical_name: 'hello_world',
+        value: {
+          value: 'Yay'
+        },
+        property_type: 'STRING',
+        origin: 'PLUGIN',
+        writable: true,
+        deletable: false
+      }
+    ])
+  });
 
-  it('Check that the plugin is giving good results with a simple activityAnalysis handler', function (
-    done
-  ) {
-    const rpMockup = sinon.stub();
+  const plugin = new MyFakeSimpleActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
 
-    rpMockup.onCall(0).returns(
-      new Promise((resolve, reject) => {
-        const pluginInfo: core.DataResponse<core.ActivityAnalyzer> = {
-          status: 'ok',
-          data: {
-            id: '42',
-            organisation_id: '1001',
-            name: 'Yolo',
-            group_id: '5445',
-            artifact_id: '5441',
-            visit_analyzer_plugin_id: 555777
-          }
-        };
-        resolve(pluginInfo);
-      })
-    );
-    rpMockup.onCall(1).returns(
-      new Promise((resolve, reject) => {
-        const pluginInfo: core.PluginPropertyResponse = {
-          status: 'ok',
-          count: 45,
-          data: [
-            {
-              technical_name: 'hello_world',
-              value: {
-                value: 'Yay'
-              },
-              property_type: 'STRING',
-              origin: 'PLUGIN',
-              writable: true,
-              deletable: false
-            }
-          ]
-        };
-        resolve(pluginInfo);
-      })
-    );
-
-    runner = new core.TestingPluginRunner(plugin, rpMockup);
-
+  it('Check that the plugin is giving good results with a simple activityAnalysis handler', function (done) {
     // We init the plugin
-    request(runner.plugin.app)
+    request(plugin.app)
       .post('/v1/init')
       .send({authentication_token: 'Manny', worker_id: 'Calavera'})
       .end((err, res) => {
@@ -174,7 +132,7 @@ describe('Activity Analysis API test', function () {
           }
         }`);
 
-        request(runner.plugin.app)
+        request(plugin.app)
           .post('/v1/activity_analysis')
           .send(requestBody)
           .end(function (err, res) {
@@ -184,14 +142,11 @@ describe('Activity Analysis API test', function () {
 
             done();
           });
-
       });
-
   });
 
   afterEach(() => {
     // We clear the cache so that we don't have any processing still running in the background
-    runner.plugin.pluginCache.clear();
+    plugin.pluginCache.clear();
   });
-
 });

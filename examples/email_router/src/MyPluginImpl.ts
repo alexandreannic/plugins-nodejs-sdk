@@ -43,15 +43,15 @@ export interface MailjetEvent {
 }
 
 export class MySimpleEmailRouter extends core.EmailRouterPlugin {
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
+
+  constructor(props?: core.BasePluginProps) {
+    super(props);
     this.initMailjetNotificationRoute();
   }
 
   /**
    * Helpers
    */
-
   buildMailjetPayload(
     datamartId: string,
     campaignId: string,
@@ -72,7 +72,6 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
   /**
    * Mailjet Send Email
    */
-
   async sendEmail(
     request: core.EmailRoutingRequest,
     identifier: core.UserEmailIdentifierInfo,
@@ -104,7 +103,7 @@ export class MySimpleEmailRouter extends core.EmailRouterPlugin {
       'Mj-campaign': request.campaign_id
     };
 
-    const mailjetResponse: MailjetSentResponse = await this.apiSdk.sendEmail(emailData);
+    const mailjetResponse: MailjetSentResponse = await this.gatewaySdk.sendEmail(emailData);
     if (mailjetResponse.Sent.length === 0) {
       this.logger.error('Mailjet sent an empty response, will retry');
       throw new Error('Mailjet sent an empty response, will retry');

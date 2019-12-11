@@ -2,7 +2,8 @@ import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
 import * as request from 'supertest';
-import * as sinon from 'sinon';
+import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
+import {IEmailRendererSdk} from '../mediarithmics/api/sdk/GatewaySdk';
 
 class MyFakeEmailRendererPlugin extends core.EmailRendererPlugin {
   protected onEmailContents(
@@ -27,38 +28,27 @@ class MyFakeEmailRendererPlugin extends core.EmailRendererPlugin {
   }
 }
 
-const rpMockup: sinon.SinonStub = sinon.stub().returns(
-  new Promise((resolve, reject) => {
-    resolve('Yolo');
-  })
-);
+const gatewayMock = newGatewaySdkMock<IEmailRendererSdk>({
+  fetchCreative: Promise.resolve({} as any),
+  fetchCreativeProperties: Promise.resolve({} as any),
+});
 
 describe('Fetch Email Renderer API', () => {
-  // All the magic is here
-  const plugin = new MyFakeEmailRendererPlugin(false);
-  const runner = new core.TestingPluginRunner(plugin, rpMockup);
+  const plugin = new MyFakeEmailRendererPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that email_renderer_id is passed correctly in fetchCreative & fetchCreativeProperties', function (
-    done
-  ) {
+  it('Check that email_renderer_id is passed correctly in fetchCreative & fetchCreativeProperties', function (done) {
     const fakeId = '42000000';
 
     // We try a call to the Gateway
-    (runner.plugin as MyFakeEmailRendererPlugin)
+    plugin.gatewaySdk
       .fetchCreative(fakeId)
       .then(() => {
-        expect(rpMockup.args[0][0].uri).to.be.eq(
-          `${runner.plugin.outboundPlatformUrl}/v1/creatives/${fakeId}`
-        );
-
+        expect(gatewayMock.calledMethods.fetchCreative.getArgs(0)?.[0] === fakeId);
         // We try a call to the Gateway
-        (runner.plugin as MyFakeEmailRendererPlugin)
+        plugin.gatewaySdk
           .fetchCreativeProperties(fakeId)
           .then(() => {
-            expect(rpMockup.args[1][0].uri).to.be.eq(
-              `${runner.plugin
-                .outboundPlatformUrl}/v1/creatives/${fakeId}/renderer_properties`
-            );
+            expect(gatewayMock.calledMethods.fetchCreativeProperties.getArgs(0)?.[0] === fakeId);
             done();
           });
       });
@@ -66,69 +56,42 @@ describe('Fetch Email Renderer API', () => {
 });
 
 describe('Email Renderer API test', function () {
-  // All the magic is here
-  const plugin = new MyFakeEmailRendererPlugin(false);
-  let runner: core.TestingPluginRunner;
+  const gatewayMock = newGatewaySdkMock<IEmailRendererSdk>({
+    fetchCreative: Promise.resolve({
+      type: 'EMAIL_TEMPLATE',
+      id: '8592',
+      organisation_id: '1135',
+      name: 'Market Box',
+      technical_name: 'hello',
+      archived: false,
+      editor_version_id: '1020',
+      editor_version_value: '1.0.0',
+      editor_group_id: 'com.mediarithmics.template.email',
+      editor_artifact_id: 'default-editor',
+      editor_plugin_id: '1015',
+      renderer_version_id: '1047',
+      renderer_version_value: '1.0.1',
+      renderer_group_id: 'com.mediarithmics.email-renderer',
+      renderer_artifact_id: 'email-handlebars-template',
+      renderer_plugin_id: '1034',
+      creation_date: 1504533940679,
+      subtype: 'EMAIL_TEMPLATE'
+    }),
+    fetchCreativeProperties: Promise.resolve([
+      {
+        technical_name: 'hello_world',
+        value: {value: 'Yay'},
+        property_type: 'STRING',
+        origin: 'PLUGIN',
+        writable: true,
+        deletable: false
+      }
+    ]),
+  });
+  const plugin = new MyFakeEmailRendererPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple onEmailContents handler', function (
-    done
-  ) {
-    const rpMockup = sinon.stub();
-
-    rpMockup.onCall(0).returns(
-      new Promise((resolve, reject) => {
-        const creative: core.DataResponse<core.Creative> = {
-          status: 'ok',
-          data: {
-            type: 'EMAIL_TEMPLATE',
-            id: '8592',
-            organisation_id: '1135',
-            name: 'Market Box',
-            technical_name: 'hello',
-            archived: false,
-            editor_version_id: '1020',
-            editor_version_value: '1.0.0',
-            editor_group_id: 'com.mediarithmics.template.email',
-            editor_artifact_id: 'default-editor',
-            editor_plugin_id: '1015',
-            renderer_version_id: '1047',
-            renderer_version_value: '1.0.1',
-            renderer_group_id: 'com.mediarithmics.email-renderer',
-            renderer_artifact_id: 'email-handlebars-template',
-            renderer_plugin_id: '1034',
-            creation_date: 1504533940679,
-            subtype: 'EMAIL_TEMPLATE'
-          }
-        };
-        resolve(creative);
-      })
-    );
-    rpMockup.onCall(1).returns(
-      new Promise((resolve, reject) => {
-        const pluginInfo: core.PluginPropertyResponse = {
-          status: 'ok',
-          count: 45,
-          data: [
-            {
-              technical_name: 'hello_world',
-              value: {
-                value: 'Yay'
-              },
-              property_type: 'STRING',
-              origin: 'PLUGIN',
-              writable: true,
-              deletable: false
-            }
-          ]
-        };
-        resolve(pluginInfo);
-      })
-    );
-
-    runner = new core.TestingPluginRunner(plugin, rpMockup);
-
-    // We init the plugin
-    request(runner.plugin.app)
+  it('Check that the plugin is giving good results with a simple onEmailContents handler', function (done) {
+    request(plugin.app)
       .post('/v1/init')
       .send({authentication_token: 'Manny', worker_id: 'Calavera'})
       .end((err, res) => {
@@ -153,35 +116,27 @@ describe('Email Renderer API test', function () {
               "operator": null,
               "creation_ts": 1489688728108,
               "last_activity_ts": 1489688728108,
-              "providers": [
-              ]
+              "providers": []
             }
           ],
-          "user_data_bag": {
-          },
-          "click_urls": [
-          ],
+          "user_data_bag": {},
+          "click_urls": [],
           "email_tracking_url": null
         }`);
 
-        request(runner.plugin.app)
+        request(plugin.app)
           .post('/v1/email_contents')
           .send(requestBody)
           .end(function (err, res) {
             expect(res.status).to.equal(200);
-
             expect(JSON.parse(res.text).content.html).to.be.eq(requestBody.call_id);
-
             done();
           });
-
       });
-
   });
 
   afterEach(() => {
     // We clear the cache so that we don't have any processing still running in the background
-    runner.plugin.pluginCache.clear();
+    plugin.pluginCache.clear();
   });
-
 });

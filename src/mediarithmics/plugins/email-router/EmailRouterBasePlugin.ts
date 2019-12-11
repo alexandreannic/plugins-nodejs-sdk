@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as _ from 'lodash';
-import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../common/BasePlugin';
 import {CheckEmailsRequest, EmailRoutingRequest} from '../../api/plugin/emailtemplaterouter/EmailRouterRequestInterface';
 
 
@@ -19,27 +19,19 @@ export interface CheckEmailsPluginResponse {
 export abstract class EmailRouterPlugin extends BasePlugin {
   instanceContext: Promise<EmailRouterBaseInstanceContext>;
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     // We init the specific route to listen for activity analysis requests
     this.initEmailRouting();
     this.initEmailCheck();
     this.setErrorHandler();
   }
 
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchEmailRouterProperties() {
-    return this.apiSdk.fetchEmailRouterProperties;
-  }
-
   // This is a default provided implementation
   protected async instanceContextBuilder(
     routerId: string
   ): Promise<EmailRouterBaseInstanceContext> {
-    const emailRouterProps = await this.fetchEmailRouterProperties(routerId);
+    const emailRouterProps = await this.gatewaySdk.fetchEmailRouterProperties(routerId);
 
     const context: EmailRouterBaseInstanceContext = {
       properties: new PropertiesWrapper(emailRouterProps)

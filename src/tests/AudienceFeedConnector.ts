@@ -2,7 +2,8 @@ import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
 import * as request from 'supertest';
-import * as sinon from 'sinon';
+import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
+import {IAudienceFeedConnectorSdk} from '../mediarithmics/api/sdk/GatewaySdk';
 
 class MyFakeAudienceFeedConnector extends core.AudienceFeedConnectorBasePlugin {
   protected onExternalSegmentCreation(
@@ -36,123 +37,59 @@ class MyFakeAudienceFeedConnector extends core.AudienceFeedConnectorBasePlugin {
   }
 }
 
-const rpMockup: sinon.SinonStub = sinon.stub().returns(
-  new Promise((resolve, reject) => {
-    resolve('Yolo');
-  })
-);
-
 describe('Fetch Audience Feed Gateway API', () => {
-  // All the magic is here
-  const plugin = new MyFakeAudienceFeedConnector(false);
-  const runner = new core.TestingPluginRunner(plugin, rpMockup);
+  const gatewayMock = newGatewaySdkMock<IAudienceFeedConnectorSdk>({
+    fetchAudienceFeed: Promise.resolve({} as any),
+    fetchAudienceFeedProperties: Promise.resolve({} as any),
+    fetchAudienceSegment: Promise.resolve({} as any),
+  });
+  const plugin = new MyFakeAudienceFeedConnector({gatewaySdk: gatewayMock});
 
-  it('Check that feed_id is passed correctly in fetchAudienceFeedProperties', function (
-    done
-  ) {
+  it('Check that feed_id is passed correctly in fetchAudienceFeedProperties', async function () {
     const fakeId = '42000000';
-
-    // We try a call to the Gateway
-    (runner.plugin as MyFakeAudienceFeedConnector)
-      .fetchAudienceFeedProperties(fakeId)
-      .then(() => {
-        expect(rpMockup.args[0][0].uri).to.be.eq(
-          `${runner.plugin
-            .outboundPlatformUrl}/v1/audience_segment_external_feeds/${fakeId}/properties`
-        );
-        done();
-      });
+    await plugin.gatewaySdk.fetchAudienceFeedProperties(fakeId);
+    expect(gatewayMock.calledMethods.fetchAudienceFeedProperties.getArgs(0)?.[0] === fakeId);
   });
 
-  it('Check that feed_id is passed correctly in fetchAudienceSegment', function (
-    done
-  ) {
+  it('Check that feed_id is passed correctly in fetchAudienceSegment', async function () {
     const fakeId = '42000000';
-
-    // We try a call to the Gateway
-    (runner.plugin as MyFakeAudienceFeedConnector)
-      .fetchAudienceSegment(fakeId)
-      .then(() => {
-        expect(rpMockup.args[1][0].uri).to.be.eq(
-          `${runner.plugin
-            .outboundPlatformUrl}/v1/audience_segment_external_feeds/${fakeId}/audience_segment`
-        );
-        done();
-      });
+    await plugin.gatewaySdk.fetchAudienceSegment(fakeId);
+    expect(gatewayMock.calledMethods.fetchAudienceSegment.getArgs(0)?.[0] === fakeId);
   });
 });
 
 describe('External Audience Feed API test', function () {
-  // All the magic is here
-  const plugin = new MyFakeAudienceFeedConnector(false);
-  let runner: core.TestingPluginRunner;
 
-  it('Check that the plugin is giving good results with a simple handler', function (
-    done
-  ) {
-    const rpMockup: sinon.SinonStub = sinon.stub();
+  const audienceFeed: core.AudienceSegmentExternalFeedResource = {
+    id: '74',
+    plugin_id: '984',
+    organisation_id: '95',
+    group_id: 'com.mediarithmics.audience-feed',
+    artifact_id: 'awesome-audience-feed',
+    version_id: '1254'
+  };
 
-    const audienceFeed: core.DataResponse<core.AudienceSegmentExternalFeedResource> = {
-      status: 'ok',
-      data: {
-        id: '74',
-        plugin_id: '984',
-        organisation_id: '95',
-        group_id: 'com.mediarithmics.audience-feed',
-        artifact_id: 'awesome-audience-feed',
-        version_id: '1254'
-      }
-    };
+  const properties: core.PluginProperty[] = [
+    {
+      technical_name: 'hello_world',
+      value: {value: 'Yay'},
+      property_type: 'STRING',
+      origin: 'PLUGIN',
+      writable: true,
+      deletable: false
+    }
+  ];
+  const gatewayMock = newGatewaySdkMock<IAudienceFeedConnectorSdk>({
+    fetchAudienceFeed: Promise.resolve(audienceFeed),
+    fetchAudienceFeedProperties: Promise.resolve(properties),
+    fetchAudienceSegment: Promise.resolve({} as any),
+  });
 
-    rpMockup
-      .withArgs(
-        sinon.match.has(
-          'uri',
-          sinon.match(function (value: string) {
-            return (
-              value.match(/\/v1\/audience_segment_external_feeds\/(.){1,10}/) !==
-              null
-            );
-          })
-        )
-      )
-      .returns(audienceFeed);
+  const plugin = new MyFakeAudienceFeedConnector({gatewaySdk: gatewayMock});
 
-    const properties: core.DataListResponse<core.PluginProperty> = {
-      status: 'ok',
-      count: 1,
-      data: [
-        {
-          technical_name: 'hello_world',
-          value: {
-            value: 'Yay'
-          },
-          property_type: 'STRING',
-          origin: 'PLUGIN',
-          writable: true,
-          deletable: false
-        }
-      ]
-    };
-
-    rpMockup
-      .withArgs(
-        sinon.match.has(
-          'uri',
-          sinon.match(function (value: string) {
-            return (
-              value.match(/\/v1\/audience_segment_external_feeds\/(.){1,10}\/properties/) !==
-              null
-            );
-          })
-        )
-      )
-      .returns(properties);
-
-    runner = new core.TestingPluginRunner(plugin, rpMockup);
-
+  it('Check that the plugin is giving good results with a simple handler', function (done) {
     // We init the plugin
-    request(runner.plugin.app)
+    request(plugin.app)
       .post('/v1/init')
       .send({authentication_token: 'Manny', worker_id: 'Calavera'})
       .end((err, res) => {
@@ -217,7 +154,7 @@ describe('External Audience Feed API test', function () {
       ]
     };
 
-    request(runner.plugin.app)
+    request(plugin.app)
       .post('/v1/external_segment_creation')
       .send(externalSegmentCreation)
       .end(function (err, res) {
@@ -225,7 +162,7 @@ describe('External Audience Feed API test', function () {
 
         expect(JSON.parse(res.text).status).to.be.eq('ok');
 
-        request(runner.plugin.app)
+        request(plugin.app)
           .post('/v1/external_segment_connection')
           .send(externalSegmentConnection)
           .end(function (err, res) {
@@ -233,7 +170,7 @@ describe('External Audience Feed API test', function () {
 
             expect(JSON.parse(res.text).status).to.be.eq('ok');
 
-            request(runner.plugin.app)
+            request(plugin.app)
               .post('/v1/user_segment_update')
               .send(userSegmentUpdateRequest)
               .end(function (err, res) {
@@ -243,16 +180,13 @@ describe('External Audience Feed API test', function () {
 
                 done();
               });
-
           });
-
       });
 
   });
 
   afterEach(() => {
     // We clear the cache so that we don't have any processing still running in the background
-    runner.plugin.pluginCache.clear();
+    plugin.pluginCache.clear();
   });
-
 });

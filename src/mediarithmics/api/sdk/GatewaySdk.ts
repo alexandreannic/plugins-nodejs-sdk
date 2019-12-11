@@ -1,4 +1,4 @@
-import {ApiClient} from './ApiClient';
+import {HttpClient} from './HttpClient';
 import {
   ActivityAnalyzer,
   AdRendererRecoTemplateInstanceContext,
@@ -13,20 +13,81 @@ import {
   PluginProperty,
   RecommendationsWrapper,
   UserCampaignResource
-} from '..';
+} from '../../index';
 import * as winston from 'winston';
-import {core} from '../../index';
+import {core} from '../../../index';
 
 const mapData = <T = any>(_: core.DataResponse<T>): T => _.data;
 
-export class ApiSdk {
+export interface IAdRendererRecoSdk {
+  fetchRecommendations: (instanceContext: AdRendererRecoTemplateInstanceContext, userAgentId: string) => Promise<Array<ItemProposal>>
+  fetchUserCampaign: (campaignId: string, userCampaignId: string) => Promise<UserCampaignResource>
+}
+
+export interface IAudienceFeedConnectorSdk {
+  fetchAudienceFeed: (feedId: string) => Promise<AudienceSegmentExternalFeedResource>
+  fetchAudienceFeedProperties: (feedId: string) => Promise<PluginProperty[]>
+  fetchAudienceSegment: (feedId: string) => Promise<AudienceSegmentResource>
+}
+
+export interface IBidOptimizerSdk {
+  fetchBidOptimizer: (bidOptimizerId: string) => Promise<BidOptimizer>
+  fetchBidOptimizerProperties: (bidOptimizerId: string) => Promise<PluginProperty[]>
+}
+
+export interface IActivityAnalyzerSdk {
+  fetchActivityAnalyzer: (activityAnalyzerId: string) => Promise<ActivityAnalyzer>
+  fetchActivityAnalyzerProperties: (activityAnalyzerId: string) => Promise<PluginProperty[]>
+}
+
+export interface IAdRendererSdk {
+  fetchDisplayAd: (displayAdId: string, forceReload?: boolean) => Promise<DisplayAd>
+  fetchDisplayAdProperties: (displayAdId: string, forceReload?: boolean) => Promise<PluginProperty[]>
+}
+// Merge this
+export interface IEmailRendererSdk {
+  fetchCreative: (id: string, forceReload?: boolean) => Promise<Creative>
+  fetchCreativeProperties: (id: string, forceReload?: boolean) => Promise<PluginProperty[]>
+}
+
+export interface IEmailRouterSdk {
+  fetchEmailRouterProperties: (id: string) => Promise<PluginProperty[]>
+  sendEmail: <T>(emailData: any) => Promise<T>
+}
+
+export interface IRecommenderSdk {
+  fetchRecommenderCatalogs: (recommenderId: string) => Promise<Catalog[]>
+  fetchRecommenderProperties: (recommenderId: string) => Promise<PluginProperty[]>
+}
+
+export interface IBaseSdk {
+  fetchConfigurationFile: (fileName: string) => Promise<Buffer>
+  fetchDataFile: (uri: string) => Promise<Buffer>
+}
+
+export type IGatewaySdk = IAdRendererSdk
+  & IAdRendererRecoSdk
+  & IAudienceFeedConnectorSdk
+  & IBidOptimizerSdk
+  & IActivityAnalyzerSdk
+  & IEmailRendererSdk
+  & IEmailRouterSdk
+  & IRecommenderSdk
+  & IBaseSdk
+
+export class GatewaySdk implements IGatewaySdk {
 
   constructor(
     baseURL: string,
-    transport: () => any,
-    credentials: Credentials,
-    private logger: winston.Logger,
-    public client: ApiClient = new ApiClient(baseURL, transport, credentials, logger)
+    credentials: () => Credentials,
+    private logger: () => winston.Logger,
+    public client: HttpClient = new HttpClient(
+      baseURL,
+      logger,
+      () => ({
+        headers: {auth: {user: credentials().worker_id, pass: credentials().authentication_token, sendImmediately: true}}
+      }),
+    )
   ) {
   }
 
@@ -39,13 +100,18 @@ export class ApiSdk {
   };
 
   readonly fetchDisplayAd = async (displayAdId: string, forceReload = false): Promise<DisplayAd> => {
-    return this.client.get<core.DataResponse<DisplayAd>>(`/v1/creatives/${displayAdId}`, {'force-reload': forceReload})
+    return this.client.get<core.DataResponse<DisplayAd>>(`/v1/creatives/${displayAdId}`, {qs: {'force-reload': forceReload}})
       .then(mapData)
       .then(_ => _.type === 'DISPLAY_AD' ? _ : Promise.reject(`crid: ${displayAdId} - When fetching DisplayAd, another creative type was returned!`));
   };
 
+
+  /**
+   * Merge with other one
+   * @deprecated
+   */
   readonly fetchDisplayAdProperties = async (displayAdId: string, forceReload = false): Promise<PluginProperty[]> => {
-    return this.client.get(`/v1/creatives/${displayAdId}/renderer_properties`, {'force-reload': forceReload}).then(mapData);
+    return this.client.get(`/v1/creatives/${displayAdId}/renderer_properties`, {qs: {'force-reload': forceReload}}).then(mapData);
   };
 
   /**
@@ -65,7 +131,7 @@ export class ApiSdk {
         user_agent_id: userAgentId
       }
     };
-    return this.client.post<core.DataResponse<RecommendationsWrapper>>(`/v1/recommenders/${instanceContext.recommender_id}/recommendations`, body)
+    return this.client.post<core.DataResponse<RecommendationsWrapper>>(`/v1/recommenders/${instanceContext.recommender_id}/recommendations`, {body})
       .then(mapData)
       .then(_ => _.proposals);
   };
@@ -80,7 +146,7 @@ export class ApiSdk {
     return this.client.get<core.DataResponse<UserCampaignResource>>(`/v1/display_campaigns/${campaignId}/user_campaigns/${userCampaignId}`)
       .then(mapData)
       .catch(e => {
-        this.logger.error(`User campaign could not be fetched for: ${campaignId} - ${userCampaignId} Returning empty user campaign Error: ${e.message} - ${e.stack}`);
+        this.logger().error(`User campaign could not be fetched for: ${campaignId} - ${userCampaignId} Returning empty user campaign Error: ${e.message} - ${e.stack}`);
         return {
           user_account_id: 'null',
           user_agent_ids: ['null'],
@@ -111,20 +177,23 @@ export class ApiSdk {
   };
 
   readonly fetchConfigurationFile = async (fileName: string): Promise<Buffer> => {
-    return this.client.get(`/v1/configuration/technical_name=${fileName}`, undefined, false, true);
+    return this.client.get(`/v1/configuration/technical_name=${fileName}`, {isBinary: true});
   };
 
   readonly fetchDataFile = async (uri: string): Promise<Buffer> => {
-    return this.client.get(`/v1/data_file/data`, {uri: uri}, false, true);
+    return this.client.get(`/v1/data_file/data`, {qs: {uri}, isBinary: true});
   };
 
-  // Helper to fetch the creative resource with caching
+  /**
+   * Helper to fetch the creative resource with caching
+   * @deprecated
+   */
   readonly fetchCreative = async (id: string, forceReload = false): Promise<Creative> => {
-    return this.client.get(`/v1/creatives/${id}`, {'force-reload': forceReload}).then(mapData);
+    return this.client.get(`/v1/creatives/${id}`, {qs: {'force-reload': forceReload}}).then(mapData);
   };
 
   readonly fetchCreativeProperties = async (id: string, forceReload = false): Promise<PluginProperty[]> => {
-    return this.client.get(`/v1/creatives/${id}/renderer_properties`, {'force-reload': forceReload}).then(mapData);
+    return this.client.get(`/v1/creatives/${id}/renderer_properties`, {qs: {'force-reload': forceReload}}).then(mapData);
   };
 
   readonly fetchEmailRouterProperties = async (id: string): Promise<PluginProperty[]> => {
@@ -132,7 +201,7 @@ export class ApiSdk {
   };
 
   readonly sendEmail = async <T>(emailData: any): Promise<T> => {
-    return this.client.post(`/v1/external_services/technical_name=mailjet/call`, emailData);
+    return this.client.post(`/v1/external_services/technical_name=mailjet/call`, {body: emailData});
   };
 
   // Helper to fetch the activity analyzer resource with caching
