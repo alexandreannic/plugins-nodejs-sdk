@@ -4,6 +4,7 @@ import {core} from '../';
 import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IActivityAnalyzerSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {PluginApiTester} from '../helper';
 
 describe('Fetch analyzer API', () => {
 
@@ -94,6 +95,8 @@ describe('Activity Analysis API test', function () {
   const plugin = new MyFakeSimpleActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
 
   it('Check that the plugin is giving good results with a simple activityAnalysis handler', function (done) {
+    const tester = new PluginApiTester(plugin);
+    tester.initPlugin()
     // We init the plugin
     request(plugin.app)
       .post('/v1/init')
