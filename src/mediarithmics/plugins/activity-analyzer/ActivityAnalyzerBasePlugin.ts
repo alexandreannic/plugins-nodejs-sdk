@@ -1,8 +1,6 @@
 import * as express from 'express';
 import * as _ from 'lodash';
-
-import {BasePlugin, PropertiesWrapper} from '../common/BasePlugin';
-
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../common/BasePlugin';
 import {ActivityAnalyzer, ActivityAnalyzerPluginResponse, ActivityAnalyzerRequest,} from './ActivityAnalyzerInterface';
 
 export interface ActivityAnalyzerBaseInstanceContext {
@@ -12,28 +10,11 @@ export interface ActivityAnalyzerBaseInstanceContext {
 
 export abstract class ActivityAnalyzerPlugin extends BasePlugin {
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     // We init the specific route to listen for activity analysis requests
     this.initActivityAnalysis();
     this.setErrorHandler();
-  }
-
-  /**
-   * Helper to fetch the activity analyzer resource with caching
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchActivityAnalyzer() {
-    return this.apiSdk.fetchActivityAnalyzer;
-  }
-
-  /**
-   * Helper to fetch the activity analyzer resource with caching
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchActivityAnalyzerProperties() {
-    return this.apiSdk.fetchActivityAnalyzerProperties;
   }
 
   // This is a default provided implementation
@@ -41,8 +22,8 @@ export abstract class ActivityAnalyzerPlugin extends BasePlugin {
     activityAnalyzerId: string
   ): Promise<ActivityAnalyzerBaseInstanceContext> {
     const [activityAnalyzer, activityAnalyzerProps] = await Promise.all([
-      this.apiSdk.fetchActivityAnalyzer(activityAnalyzerId),
-      this.apiSdk.fetchActivityAnalyzerProperties(activityAnalyzerId),
+      this.gatewaySdk.fetchActivityAnalyzer(activityAnalyzerId),
+      this.gatewaySdk.fetchActivityAnalyzerProperties(activityAnalyzerId),
     ]);
 
     return {

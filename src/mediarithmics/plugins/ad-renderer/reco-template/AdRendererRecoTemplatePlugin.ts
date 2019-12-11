@@ -1,5 +1,6 @@
 import {AdRendererTemplateInstanceContext, AdRendererTemplatePlugin} from '../template/AdRendererTemplatePlugin';
 import {map} from '../../../utils';
+import {BasePluginProps} from '../../common';
 
 export interface AdRendererRecoTemplateInstanceContext
   extends AdRendererTemplateInstanceContext {
@@ -7,30 +8,8 @@ export interface AdRendererRecoTemplateInstanceContext
 }
 
 export abstract class AdRendererRecoTemplatePlugin extends AdRendererTemplatePlugin {
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-  }
-
-  /**
-   * Helper to fetch the User Campaign
-   * @param campaignId  The campaignId -> should come from the AdRendererRequest
-   * @param userCampaignId  The userCampaignId -> should come from the AdRendererRequest
-   * @returns       A Promise of the User Campaign
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchUserCampaign() {
-    return this.apiSdk.fetchUserCampaign;
-  }
-
-  /**
-   * Helper to fetch the User recommendations
-   * @param instanceContext  The instanceContext -> contains the recommender_id of the creative
-   * @param userAgentId  The userAgentId as a string -> should come from the AdRendererRequest (recommended) or from the UserCampaign
-   * @returns       A Promise of the Recommendations
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchRecommendations() {
-    return this.apiSdk.fetchRecommendations;
+  constructor(props?: BasePluginProps) {
+    super(props);
   }
 
   protected async instanceContextBuilder(creativeId: string) {

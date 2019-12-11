@@ -1,17 +1,14 @@
 import {BasePlugin} from './BasePlugin';
 import {Server} from 'http';
 
+/**
+ * @deprecated
+ */
 export class TestingPluginRunner {
 
-  plugin: BasePlugin;
   server: Server;
 
-  constructor(plugin: BasePlugin, transport?: any) {
-    this.plugin = plugin;
-
-    if (transport) {
-      this.plugin._transport = transport;
-    }
+  constructor(public plugin: BasePlugin) {
   }
 
   // Start a server serving the plugin app

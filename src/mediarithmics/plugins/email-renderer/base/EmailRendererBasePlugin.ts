@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as _ from 'lodash';
-import {BasePlugin, PropertiesWrapper} from '../../common';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../../common';
 import {Creative} from '../../../api/core/creative';
 import {EmailRenderRequest} from '../../../api/plugin/emailtemplaterenderer/EmailRendererRequestInterface';
 import {EmailRendererPluginResponse} from '../../../api/plugin/emailtemplaterenderer/EmailRendererPluginResponse';
@@ -13,27 +13,11 @@ export interface EmailRendererBaseInstanceContext {
 export abstract class EmailRendererPlugin<T extends EmailRendererBaseInstanceContext = EmailRendererBaseInstanceContext> extends BasePlugin {
   instanceContext: Promise<T>;
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     // We init the specific route to listen for email contents requests
     this.initEmailContents();
     this.setErrorHandler();
-  }
-
-  /**
-   * Helper to fetch the creative resource with caching
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchCreative() {
-    return this.apiSdk.fetchCreative;
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchCreativeProperties() {
-    return this.apiSdk.fetchCreativeProperties;
   }
 
   // This is a default provided implementation
@@ -41,8 +25,8 @@ export abstract class EmailRendererPlugin<T extends EmailRendererBaseInstanceCon
     creativeId: string,
     forceReload = false
   ): Promise<T> {
-    const creativeP = this.fetchCreative(creativeId, forceReload);
-    const creativePropsP = this.fetchCreativeProperties(creativeId, forceReload);
+    const creativeP = this.gatewaySdk.fetchCreative(creativeId, forceReload);
+    const creativePropsP = this.gatewaySdk.fetchCreativeProperties(creativeId, forceReload);
 
     const results = await Promise.all([creativeP, creativePropsP]);
 

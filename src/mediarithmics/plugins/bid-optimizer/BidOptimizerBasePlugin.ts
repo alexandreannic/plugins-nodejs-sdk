@@ -1,6 +1,6 @@
 import * as express from 'express';
 import * as _ from 'lodash';
-import {BasePlugin, PropertiesWrapper} from '../common';
+import {BasePlugin, BasePluginProps, PropertiesWrapper} from '../common';
 import {BidOptimizer} from '../../api/core/bidoptimizer/BidOptimizerInterface';
 import {BidOptimizerRequest, SaleCondition} from '../../api/plugin/bidoptimizer/BidOptimizerRequestInterface';
 import {BidDecision} from '../../api/plugin/bidoptimizer/BidDecision';
@@ -15,25 +15,10 @@ export interface BidOptimizerBaseInstanceContext {
 export abstract class BidOptimizerPlugin extends BasePlugin {
   instanceContext: Promise<BidOptimizerBaseInstanceContext>;
 
-  constructor(enableThrottling = false) {
-    super(enableThrottling);
-
+  constructor(props?: BasePluginProps) {
+    super(props);
     this.initBidDecisions();
     this.setErrorHandler();
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchBidOptimizer() {
-    return this.apiSdk.fetchBidOptimizer;
-  }
-
-  /**
-   * @deprecated Call it through apiSdk instead
-   */
-  get fetchBidOptimizerProperties() {
-    return this.apiSdk.fetchBidOptimizerProperties;
   }
 
   findBestSalesConditions(
@@ -85,8 +70,8 @@ export abstract class BidOptimizerPlugin extends BasePlugin {
   protected async instanceContextBuilder(
     bidOptimizerId: string
   ): Promise<BidOptimizerBaseInstanceContext> {
-    const bidOptimizerP = this.fetchBidOptimizer(bidOptimizerId);
-    const bidOptimizerPropsP = this.fetchBidOptimizerProperties(bidOptimizerId);
+    const bidOptimizerP = this.gatewaySdk.fetchBidOptimizer(bidOptimizerId);
+    const bidOptimizerPropsP = this.gatewaySdk.fetchBidOptimizerProperties(bidOptimizerId);
 
     const results = await Promise.all([bidOptimizerP, bidOptimizerPropsP]);
 
