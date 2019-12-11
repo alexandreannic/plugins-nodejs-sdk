@@ -1,10 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
-import * as request from 'supertest';
 import {MySimpleAdRenderer} from '../MyPluginImpl';
 import {AdRendererRequest, DisplayAd, IAdRendererSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
+import {PluginApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 
-// Creative stub
 const creative: DisplayAd = {
   type: 'DISPLAY_AD',
   id: '7168',
@@ -141,32 +140,13 @@ const adRequest: AdRendererRequest = {
 };
 
 describe('Test Example Handlebar Ad Renderer', function () {
-  it('Check overall execution of dummy handlebar adRenderer', function (done) {
+  it('Check overall execution of dummy handlebar adRenderer', async function () {
     const plugin = new MySimpleAdRenderer({gatewaySdk: gatewayMock});
 
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        // Plugin log level to debug
-        request(plugin.app)
-          .put('/v1/log_level')
-          .send({level: 'silly'})
-          .end((err, res) => {
-            expect(res.status).to.equal(200);
-
-            // Activity to process
-            request(plugin.app)
-              .post('/v1/ad_contents')
-              .send(adRequest)
-              .end((err, res) => {
-                expect(res.status).to.eq(200);
-                expect(res.header['x-mics-display-context']).to.eq('{"hello":"\\u2764"}');
-                done();
-              });
-          });
-      });
+    const tester = new PluginApiTester(plugin);
+    await tester.initPlugin('silly');
+    const res = await tester.post('/v1/ad_contents', adRequest);
+    expect(res.status).to.eq(200);
+    expect(res.header['x-mics-display-context']).to.eq('{"hello":"\\u2764"}');
   });
 });

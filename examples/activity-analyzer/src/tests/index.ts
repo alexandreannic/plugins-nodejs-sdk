@@ -1,12 +1,11 @@
 import 'mocha';
-import {core} from '@mediarithmics/plugins-nodejs-sdk';
 import {MyActivityAnalyzerPlugin} from '../MyPluginImpl';
-import {IActivityAnalyzerSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import * as request from 'supertest';
+import {ActivityAnalyzer, IActivityAnalyzerSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
+import {PluginApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 import {expect} from 'chai';
 
 describe('Test Example Activity Analyzer', function () {
-  it('Check behavior of dummy activity analyzer', function (done) {
+  it('Check behavior of dummy activity analyzer', async function () {
     const activityAnalyzerProperties: PluginProperty[] = [
       {
         technical_name: 'analyzer_rules',
@@ -22,7 +21,7 @@ describe('Test Example Activity Analyzer', function () {
       }
     ];
 
-    const activityAnalyzer: core.ActivityAnalyzer = {
+    const activityAnalyzer: ActivityAnalyzer = {
       id: '1000',
       name: 'my analyzer',
       organisation_id: '1000',
@@ -36,33 +35,15 @@ describe('Test Example Activity Analyzer', function () {
       fetchActivityAnalyzerProperties: Promise.resolve(activityAnalyzerProperties),
     });
 
-    const plugin = new MyActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
-
     const input = require(`${process.cwd()}/src/tests/activity_input`);
     const output = require(`${process.cwd()}/src/tests/activity_output`);
 
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        request(plugin.app)
-          .put('/v1/log_level')
-          .send({level: 'info'})
-          .end((err, res) => {
-            expect(res.status).to.equal(200);
-
-            request(plugin.app)
-              .post('/v1/activity_analysis')
-              .send(input)
-              .end((err, res) => {
-                expect(res.status).to.eq(200);
-                expect(JSON.parse(res.text)).to.be.deep.equal(output);
-                done();
-                plugin.pluginCache.clear();
-              });
-          });
-      });
+    const plugin = new MyActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
+    const tester = new PluginApiTester(plugin);
+    await tester.initPlugin();
+    const res = await tester.post('/v1/activity_analysis', input);
+    expect(res.status).to.eq(200);
+    expect(JSON.parse(res.text)).to.be.deep.equal(output);
+    plugin.pluginCache.clear();
   });
 });
