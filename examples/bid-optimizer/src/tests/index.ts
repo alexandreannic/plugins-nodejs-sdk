@@ -1,11 +1,12 @@
 import {expect} from 'chai';
 import 'mocha';
-import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
+import {BidOptimizerApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {BidOptimizerRequest, newGatewaySdkMock, IBidOptimizerSdk} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
 import {MyBidOptimizerPlugin} from '../MyPluginImpl';
 
 describe('Test Example BidOptimizer', function () {
 
-  const mocks = core.newGatewaySdkMock<core.IBidOptimizerSdk>({
+  const mocks = newGatewaySdkMock<IBidOptimizerSdk>({
     fetchBidOptimizer: Promise.resolve({
       id: '1000',
       name: 'my analyzer',
@@ -26,7 +27,7 @@ describe('Test Example BidOptimizer', function () {
     ])
   });
 
-  const bidDecisionRequest: core.BidOptimizerRequest = JSON.parse(`
+  const bidDecisionRequest: BidOptimizerRequest = JSON.parse(`
         {
             "bid_info":{
                "media_type":"WEB",
@@ -116,14 +117,9 @@ describe('Test Example BidOptimizer', function () {
 
   it('Check behavior of dummy bid optimizer', async function () {
     const plugin = new MyBidOptimizerPlugin({gatewaySdk: mocks});
-    const tester = new helper.PluginApiTester(plugin);
-    await tester.initPlugin('debug');
-    const res = await tester.post('/v1/bid_decisions', bidDecisionRequest);
-    expect(res.status).to.eq(200);
-    expect(
-      (JSON.parse(res.text) as core.BidOptimizerPluginResponse).bids[0].bid_price
-    ).to.be.eq(
-      bidDecisionRequest.campaign_info.max_bid_price
-    );
+    const tester = new BidOptimizerApiTester(plugin);
+    await tester.init('debug');
+    const res = await tester.initBidDecisions(bidDecisionRequest);
+    expect(res.parsedText.bids[0].bid_price).to.be.eq(bidDecisionRequest.campaign_info.max_bid_price);
   });
 });

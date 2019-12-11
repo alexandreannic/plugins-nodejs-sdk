@@ -1,8 +1,7 @@
 import {expect} from 'chai';
 import 'mocha';
-import {PluginApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {EmailRouterApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 import {
-  EmailRoutingPluginResponse,
   EmailRoutingRequest,
   IEmailRouterSdk,
   newGatewaySdkMock,
@@ -106,11 +105,10 @@ describe('Test Example Email Router', function () {
       data: '{}'
     };
 
-    const tester = new PluginApiTester(plugin);
-    await tester.initPlugin('debug');
-    const res = await tester.post('/v1/email_routing', emailRoutingRequest);
-    expect(res.status).to.eq(200);
-    expect((JSON.parse(res.text) as EmailRoutingPluginResponse).result).to.be.true;
+    const tester = new EmailRouterApiTester(plugin);
+    await tester.init('debug');
+    const res = await tester.initEmailRouting(emailRoutingRequest);
+    expect(res.parsedText.result).to.be.true;
   });
 
   it('Check the Email Routeur retry', async function () {
@@ -186,10 +184,9 @@ describe('Test Example Email Router', function () {
       data: '{}'
     };
 
-    const tester = new PluginApiTester(plugin);
-    await tester.initPlugin('debug');
-    const res = await tester.post('/v1/email_routing', emailRoutingRequest);
-    expect(res.status).to.eq(200);
-    expect((JSON.parse(res.text) as EmailRoutingPluginResponse).result).to.be.true;
+    const tester = new EmailRouterApiTester(plugin);
+    await tester.init('debug');
+    const res = await tester.initEmailRouting(emailRoutingRequest);
+    expect(res.parsedText.result).to.be.true;
   });
 });

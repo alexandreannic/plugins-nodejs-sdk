@@ -1,1 +1,1 @@
-export {PluginApiTester} from './PluginApiTester';
+export * from './PluginApiTester';

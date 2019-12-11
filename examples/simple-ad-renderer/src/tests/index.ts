@@ -2,7 +2,7 @@ import {expect} from 'chai';
 import 'mocha';
 import {MySimpleAdRenderer} from '../MyPluginImpl';
 import {AdRendererRequest, DisplayAd, IAdRendererSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import {PluginApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {AdRendererApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 
 const creative: DisplayAd = {
   type: 'DISPLAY_AD',
@@ -143,10 +143,9 @@ describe('Test Example Handlebar Ad Renderer', function () {
   it('Check overall execution of dummy handlebar adRenderer', async function () {
     const plugin = new MySimpleAdRenderer({gatewaySdk: gatewayMock});
 
-    const tester = new PluginApiTester(plugin);
-    await tester.initPlugin('silly');
-    const res = await tester.post('/v1/ad_contents', adRequest);
-    expect(res.status).to.eq(200);
+    const tester = new AdRendererApiTester(plugin);
+    await tester.init('silly');
+    const res = await tester.initAdContents(adRequest);
     expect(res.header['x-mics-display-context']).to.eq('{"hello":"\\u2764"}');
   });
 });

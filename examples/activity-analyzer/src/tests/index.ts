@@ -1,7 +1,7 @@
 import 'mocha';
 import {MyActivityAnalyzerPlugin} from '../MyPluginImpl';
 import {ActivityAnalyzer, IActivityAnalyzerSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import {PluginApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {ActivityAnalyzerApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 import {expect} from 'chai';
 
 describe('Test Example Activity Analyzer', function () {
@@ -39,11 +39,10 @@ describe('Test Example Activity Analyzer', function () {
     const output = require(`${process.cwd()}/src/tests/activity_output`);
 
     const plugin = new MyActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
-    const tester = new PluginApiTester(plugin);
-    await tester.initPlugin();
-    const res = await tester.post('/v1/activity_analysis', input);
-    expect(res.status).to.eq(200);
-    expect(JSON.parse(res.text)).to.be.deep.equal(output);
+    const tester = new ActivityAnalyzerApiTester(plugin);
+    await tester.init();
+    const res = await tester.initActivityAnalysis(input);
+    expect(res.parsedText).to.be.deep.equal(output);
     plugin.pluginCache.clear();
   });
 });
