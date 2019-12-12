@@ -1,11 +1,11 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {PropertiesWrapper} from '../mediarithmics';
 import {generateEncodedClickUrl} from '../mediarithmics/plugins/ad-renderer/utils/index';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IAdRendererSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {AdRendererApiTester} from '../helper';
 
 describe('Fetch DisplayAd API', () => {
   class MyFakeAdRenderer extends core.AdRendererBasePlugin<core.AdRendererBaseInstanceContext> {
@@ -51,7 +51,6 @@ describe('Fetch DisplayAd API', () => {
   it('Check that creativeId is passed correctly in fetchDisplayAd', async function () {
     const fakeCreativeId = '422';
     await plugin.gatewaySdk.fetchDisplayAd(fakeCreativeId);
-    const x = gatewayMock.calledMethods.fetchDisplayAd.getArgs(0);
     expect(gatewayMock.calledMethods.fetchDisplayAd.getArgs(0)?.[0] === fakeCreativeId);
   });
 
@@ -116,14 +115,10 @@ describe('Ad Contents API test', function () {
   });
   const plugin = new MyFakeAdRenderer2({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple adContents handler', function (done) {
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        const requestBody = JSON.parse(`{
+  it('Check that the plugin is giving good results with a simple adContents handler', async function () {
+    const tester = new AdRendererApiTester(plugin);
+    await tester.init();
+    const requestBody = JSON.parse(`{
           "call_id":"auc:goo:58346725000689de0a16ac4f120ecc41-0",
           "context":"LIVE",
           "creative_id":"2757",
@@ -140,15 +135,9 @@ describe('Ad Contents API test', function () {
           "longitude":null,
           "restrictions":{"animation_max_duration":25}
       }`);
-        request(plugin.app)
-          .post('/v1/ad_contents')
-          .send(requestBody)
-          .end(function (err, res) {
-            expect(res.status).to.equal(200);
-            expect(res.text).to.be.eq(requestBody.call_id);
-            done();
-          });
-      });
+
+    const res = await tester.postAdContents(requestBody);
+    expect(res.text).to.be.eq(requestBody.call_id);
   });
 
   afterEach(() => {
@@ -158,7 +147,7 @@ describe('Ad Contents API test', function () {
 });
 
 describe('Instance Context check', () => {
-  it('Check that the instanceContext is rebuilt at each call for PREVIEW', function (done) {
+  it('Check that the instanceContext is rebuilt at each call for PREVIEW', async function () {
     let callCount = 0;
 
     // Fake AdRenderer with dummy processing
@@ -241,43 +230,12 @@ describe('Instance Context check', () => {
     };
 
     const plugin = new MyFakeAdRenderer();
-
-    // Plugin init
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        // Plugin log level to debug
-        request(plugin.app)
-          .put('/v1/log_level')
-          .send({level: 'silly'})
-          .end((err, res) => {
-            expect(res.status).to.equal(200);
-
-            // First AdCall
-            request(plugin.app)
-              .post('/v1/ad_contents')
-              .send(adRequest)
-              .end((err, res) => {
-                expect(res.status).to.eq(200);
-
-                // Second AdCall
-                request(plugin.app)
-                  .post('/v1/ad_contents')
-                  .send(adRequest)
-                  .end((err, res) => {
-                    expect(res.status).to.eq(200);
-
-                    // As it's a PREVIEW AdCall, we should have loaded the InstanceContext twice
-                    expect(callCount).to.eq(2);
-
-                    done();
-                  });
-              });
-          });
-      });
+    const tester = new AdRendererApiTester(plugin);
+    await tester.initAndSetLogLevel('silly');
+    await tester.postAdContents(adRequest);
+    await tester.postAdContents(adRequest);
+    // As it's a PREVIEW AdCall, we should have loaded the InstanceContext twice
+    expect(callCount).to.eq(2);
   });
 });
 

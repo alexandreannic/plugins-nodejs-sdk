@@ -118,8 +118,8 @@ describe('Test Example BidOptimizer', function () {
   it('Check behavior of dummy bid optimizer', async function () {
     const plugin = new MyBidOptimizerPlugin({gatewaySdk: mocks});
     const tester = new BidOptimizerApiTester(plugin);
-    await tester.init('debug');
-    const res = await tester.initBidDecisions(bidDecisionRequest);
+    await tester.initAndSetLogLevel('debug');
+    const res = await tester.postBidDecisions(bidDecisionRequest);
     expect(res.parsedText.bids[0].bid_price).to.be.eq(bidDecisionRequest.campaign_info.max_bid_price);
   });
 });

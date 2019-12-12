@@ -144,8 +144,8 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MySimpleAdRenderer({gatewaySdk: gatewayMock});
 
     const tester = new AdRendererApiTester(plugin);
-    await tester.init('silly');
-    const res = await tester.initAdContents(adRequest);
+    await tester.initAndSetLogLevel('silly');
+    const res = await tester.postAdContents(adRequest);
     expect(res.header['x-mics-display-context']).to.eq('{"hello":"\\u2764"}');
   });
 });

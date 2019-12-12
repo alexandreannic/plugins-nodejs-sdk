@@ -207,7 +207,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: mock});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    await tester.initAdContents(adRequest);
+    await tester.postAdContents(adRequest);
     expect(mock.calledMethods.fetchRecommendations.getArgs(0)?.[1] === adRequest.user_agent_id);
   });
 
@@ -215,8 +215,8 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const templateContent: string = `{{> encodeClickUrl url="http://www.mediarithmics.com/en/"}}`;
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
-    await tester.init('silly');
-    const res = await tester.initAdContents(adRequest);
+    await tester.initAndSetLogLevel('silly');
+    const res = await tester.postAdContents(adRequest);
     const urlFromHandlebar = res.text.trim();
     const correctUrl = 'https://ads.mediarithmics.com/ads/event?caid=auc%3Agoo%3A58346725000689de0a16ac4f120ecc41-0&ctx=LIVE&tid=1093&gid=1622&rid=2757&uaid=tech%3Agoo%3ACAESEANnikq25sbChKLHU7-o7ls&type=clk&ctid=%7B%7BMICS_AD_CONTENT_ID%7D%7D&redirect=https%3A%2F%2Fadclick.g.doubleclick.net%2Faclk%3Fsa%3DL%26ai%3DCDypOJWc0WN6TGs_YWsGYu5AB4Kmf9UbfuK_coAPAjbcBEAEgAGDVjdOCvAiCARdjYS1wdWItNjE2Mzg1Nzk5Mjk1Njk2NMgBCakCNKXJyWPNsT7gAgCoAwGqBOkBT9DCltAKPa0ltaiH2E0CxRF2Jee8ykOBqRGHBbE8aYS7jODKKPHE3KkGbenZXwSan1UZekvmuIfSdRUg6DFQhnbJnMR_bK57BQlMaMnmd71MXTv6P9Hh0m5cuoj7SlpOoyMX9IG8mNomIve031sZUPKOb5QA_tVKhtrlnm2hYJ7KSVZJH_83YmpK_ShxuxIwiAwQKMhYBnM4tnbvEinl3fROiwH1FFNOlqNJPaNgU4z9kEGCHIpj3RLErIcrxmT5OFLZ3q5AELXCYBJP1zB-UvscTkLrfc3Vl-sOe5f5_Tkkn-MpcijM_Z_gBAGABvDqk_ivqMjMFaAGIagHpr4b2AcA0ggFCIBhEAE%26num%3D1%26sig%3DAOD64_3iMhOr3Xh-A4bP1jvMzeEMGFfwtw%26client%3Dca-pub-6163857992956964%26adurl%3Dhttp%253A%252F%252Fwww.mediarithmics.com%252Fen%252F';
     expect(urlFromHandlebar).to.be.eq(correctUrl.replace(badChars, escapeChar));
@@ -231,7 +231,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    const res = await tester.initAdContents(adRequest);
+    const res = await tester.postAdContents(adRequest);
     const urlsFromHandlebar = res.text.split(',').map(url => url.trim());
 
     const correctUrls = [
@@ -251,7 +251,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    const res = await tester.initAdContents(adRequest);
+    const res = await tester.postAdContents(adRequest);
     const priceFromHandlebar = res.text.trim();
     const correctPrice = '123.45';
     expect(priceFromHandlebar).to.be.eq(correctPrice.replace(badChars, escapeChar));
@@ -262,7 +262,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    const res = await tester.initAdContents(adRequest);
+    const res = await tester.postAdContents(adRequest);
     const json = res.text.trim();
     expect(json).to.be.eq(JSON.stringify(adRequest).replace(badChars, escapeChar));
   });
@@ -272,7 +272,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    const res = await tester.initAdContents(adRequest);
+    const res = await tester.postAdContents(adRequest);
     const trackingURL = res.text.trim();
     expect(trackingURL).to.be.eq(adRequest.display_tracking_url.replace(badChars, escapeChar));
   });
@@ -287,7 +287,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    const res = await tester.initAdContents(adRequest);
+    const res = await tester.postAdContents(adRequest);
     const headers = res.header['x-mics-display-context'];
     recommendations.map((prop, idx) => {
       expect(
@@ -371,7 +371,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: gatewayMock(templateContent, creativePropertiesResponse)});
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    await tester.initAdContents(adRequest);
+    await tester.postAdContents(adRequest);
   });
 
   it('Check if plugin doesn\'t fail without any user_agent_id', async function () {
@@ -379,12 +379,11 @@ describe('Test Example Handlebar Ad Renderer', function () {
     const mocks = gatewayMock(templateContent);
     const plugin = new MyHandlebarsAdRenderer({gatewaySdk: mocks});
 
-    const adRequest2 = Object.assign({}, adRequest);
-    adRequest2.user_agent_id = null;
+    const adRequest2: AdRendererRequest = {...adRequest, user_agent_id: null};
 
     const tester = new AdRendererApiTester(plugin);
     await tester.init();
-    await tester.initAdContents(adRequest2);
+    await tester.postAdContents(adRequest2);
     expect(mocks.calledMethods.fetchRecommendations.getArgs(0)?.[1] === adRequest2.user_agent_id);
   });
 });

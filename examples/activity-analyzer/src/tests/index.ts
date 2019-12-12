@@ -41,7 +41,7 @@ describe('Test Example Activity Analyzer', function () {
     const plugin = new MyActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
     const tester = new ActivityAnalyzerApiTester(plugin);
     await tester.init();
-    const res = await tester.initActivityAnalysis(input);
+    const res = await tester.postActivityAnalysis(input);
     expect(res.parsedText).to.be.deep.equal(output);
     plugin.pluginCache.clear();
   });
