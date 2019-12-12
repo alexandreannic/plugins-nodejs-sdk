@@ -1,9 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IEmailRendererSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {EmailRendererApiTester} from '../helper';
 
 class MyFakeEmailRendererPlugin extends core.EmailRendererPlugin {
   protected onEmailContents(
@@ -36,22 +36,15 @@ const gatewayMock = newGatewaySdkMock<IEmailRendererSdk>({
 describe('Fetch Email Renderer API', () => {
   const plugin = new MyFakeEmailRendererPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that email_renderer_id is passed correctly in fetchCreative & fetchCreativeProperties', function (done) {
+  it('Check that email_renderer_id is passed correctly in fetchCreative & fetchCreativeProperties', async function () {
     const fakeId = '42000000';
 
     // We try a call to the Gateway
-    plugin.gatewaySdk
-      .fetchCreative(fakeId)
-      .then(() => {
-        expect(gatewayMock.calledMethods.fetchCreative.getArgs(0)?.[0] === fakeId);
-        // We try a call to the Gateway
-        plugin.gatewaySdk
-          .fetchCreativeProperties(fakeId)
-          .then(() => {
-            expect(gatewayMock.calledMethods.fetchCreativeProperties.getArgs(0)?.[0] === fakeId);
-            done();
-          });
-      });
+    await plugin.gatewaySdk.fetchCreative(fakeId);
+    expect(gatewayMock.calledMethods.fetchCreative.getArgs(0)?.[0] === fakeId);
+    // We try a call to the Gateway
+    await plugin.gatewaySdk.fetchCreativeProperties(fakeId);
+    expect(gatewayMock.calledMethods.fetchCreativeProperties.getArgs(0)?.[0] === fakeId);
   });
 });
 
@@ -90,49 +83,38 @@ describe('Email Renderer API test', function () {
   });
   const plugin = new MyFakeEmailRendererPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple onEmailContents handler', function (done) {
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
+  it('Check that the plugin is giving good results with a simple onEmailContents handler', async function () {
+    const tester = new EmailRendererApiTester(plugin);
+    await tester.init();
 
-        const requestBody = JSON.parse(`{
-          "email_renderer_id": "1034",
-          "call_id": "8e20e0fc-acb5-4bf3-8e36-f85a9ff25150",
-          "context": "LIVE",
-          "creative_id": "6475",
-          "campaign_id": "1810",
-          "campaign_technical_name": null,
-          "user_identifiers": [
-            {
-              "type": "USER_POINT",
-              "user_point_id": "62ce5f30-191d-40fb-bd6b-8ea6f39c80eb"
-            },
-            {
-              "type": "USER_EMAIL",
-              "hash": "8865501e69c464f42a5ae7bada6d342a",
-              "email": "email_mics_152@yopmail.com",
-              "operator": null,
-              "creation_ts": 1489688728108,
-              "last_activity_ts": 1489688728108,
-              "providers": []
-            }
-          ],
-          "user_data_bag": {},
-          "click_urls": [],
-          "email_tracking_url": null
-        }`);
-
-        request(plugin.app)
-          .post('/v1/email_contents')
-          .send(requestBody)
-          .end(function (err, res) {
-            expect(res.status).to.equal(200);
-            expect(JSON.parse(res.text).content.html).to.be.eq(requestBody.call_id);
-            done();
-          });
-      });
+    const requestBody = JSON.parse(`{
+      "email_renderer_id": "1034",
+      "call_id": "8e20e0fc-acb5-4bf3-8e36-f85a9ff25150",
+      "context": "LIVE",
+      "creative_id": "6475",
+      "campaign_id": "1810",
+      "campaign_technical_name": null,
+      "user_identifiers": [
+        {
+          "type": "USER_POINT",
+          "user_point_id": "62ce5f30-191d-40fb-bd6b-8ea6f39c80eb"
+        },
+        {
+          "type": "USER_EMAIL",
+          "hash": "8865501e69c464f42a5ae7bada6d342a",
+          "email": "email_mics_152@yopmail.com",
+          "operator": null,
+          "creation_ts": 1489688728108,
+          "last_activity_ts": 1489688728108,
+          "providers": []
+        }
+      ],
+      "user_data_bag": {},
+      "click_urls": [],
+      "email_tracking_url": null
+    }`);
+    const res = await tester.postEmailContents(requestBody);
+    expect(res.parsedText.content.html).to.be.eq(requestBody.call_id);
   });
 
   afterEach(() => {

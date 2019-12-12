@@ -1,9 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IRecommenderSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {RecommenderApiTester} from '../helper';
 
 describe('Fetch recommender API', () => {
   class MyFakeRecommenderPlugin extends core.RecommenderPlugin {
@@ -75,13 +75,9 @@ describe('Recommender API test', function () {
   });
   const plugin = new MyFakeSimpleRecommenderPlugin({gatewaySdk: gatewaySdk});
 
-  it('Check that the plugin is giving good results with a simple onRecommendationRequest handler', function (done) {
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-      });
+  it('Check that the plugin is giving good results with a simple onRecommendationRequest handler', async function () {
+    const tester = new RecommenderApiTester(plugin);
+    await tester.init();
 
     const requestBody = {
       recommender_id: '5',
@@ -92,13 +88,7 @@ describe('Recommender API test', function () {
       }
     };
 
-    request(plugin.app)
-      .post('/v1/recommendations')
-      .send(requestBody)
-      .end(function (err, res) {
-        expect(res.status).to.equal(200);
-        done();
-      });
+    await tester.postRecommendation(requestBody);
   });
 
   afterEach(() => {

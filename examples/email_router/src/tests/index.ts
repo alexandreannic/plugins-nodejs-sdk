@@ -106,8 +106,8 @@ describe('Test Example Email Router', function () {
     };
 
     const tester = new EmailRouterApiTester(plugin);
-    await tester.init('debug');
-    const res = await tester.initEmailRouting(emailRoutingRequest);
+    await tester.initAndSetLogLevel('debug');
+    const res = await tester.postEmailRouting(emailRoutingRequest);
     expect(res.parsedText.result).to.be.true;
   });
 
@@ -185,8 +185,8 @@ describe('Test Example Email Router', function () {
     };
 
     const tester = new EmailRouterApiTester(plugin);
-    await tester.init('debug');
-    const res = await tester.initEmailRouting(emailRoutingRequest);
+    await tester.initAndSetLogLevel('debug');
+    const res = await tester.postEmailRouting(emailRoutingRequest);
     expect(res.parsedText.result).to.be.true;
   });
 });

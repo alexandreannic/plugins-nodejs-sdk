@@ -22,68 +22,73 @@ export class PluginApiTester {
     this.request = agent(plugin.app);
   }
 
-  protected readonly request: SuperTest<Test>;
+  private readonly request: SuperTest<Test>;
+
+  readonly get = <T>(uri: string): Promise<Response> => this.request.get(uri)
+    .then(this.throwIfNot200);
 
   readonly post = <T>(uri: string, body?: any): Promise<Response> => this.request.post(uri)
     .send(body)
-    .then(this.throwIfNotOk);
+    .then(this.throwIfNot200);
 
   readonly put = <T>(uri: string, body?: any): Promise<Response> => this.request.put(uri)
     .send(body)
-    .then(this.throwIfNotOk);
+    .then(this.throwIfNot200);
 
-  protected readonly throwIfNotOk = (res: Response): Response | Promise<never> => {
-    return res.status !== 200
-      ? Promise.reject(res.status)
-      : res;
+  protected readonly throwIfNot200 = (res: Response): Response | Promise<never> => {
+    return res.status !== 200 ? Promise.reject(res.status) : res;
   };
 
   protected readonly parseText = <T>(res: Response): PluginApiResponse<T> => {
     return {...res, parsedText: JSON.parse(res.text)} as PluginApiResponse<T>;
   };
 
-  readonly initInit = async (credentials: Credentials = {authentication_token: 'Manny', worker_id: 'Calavera'}): Promise<Response> => {
-    return this.request.post('/v1/init').send(credentials);
+  readonly init = async (credentials: Credentials = {authentication_token: 'Manny', worker_id: 'Calavera'}): Promise<Response> => {
+    return this.post('/v1/init', credentials);
   };
 
-  readonly initLog = async (logLevel: LogLevel = 'info'): Promise<Response> => {
-    return this.request.post('/v1/log_level').send({level: logLevel});
+  readonly setLogLevel = async (logLevel: LogLevel = 'info'): Promise<Response> => {
+    return this.put('/v1/log_level', {level: logLevel});
   };
 
-  readonly init = async (logLevel?: LogLevel, credentials?: Credentials): Promise<[Response, Response]> => {
-    const initRes = await this.initInit(credentials);
-    const logLevelRes = await this.initLog(logLevel);
+  readonly getStatus = async (): Promise<Response> => {
+    return this.get('/v1/status');
+  };
+
+  readonly initAndSetLogLevel = async (logLevel?: LogLevel, credentials?: Credentials): Promise<[Response, Response]> => {
+    const initRes = await this.init(credentials);
+    const logLevelRes = await this.setLogLevel(logLevel);
     return [initRes, logLevelRes];
   };
 }
 
 export class ActivityAnalyzerApiTester extends PluginApiTester {
-  initActivityAnalysis = (body: any) => this.post('/v1/activity_analysis', body).then(_ => this.parseText<ActivityAnalyzerPluginResponse>(_));
+  postActivityAnalysis = (body?: any) => this.post('/v1/activity_analysis', body).then(_ => this.parseText<ActivityAnalyzerPluginResponse>(_));
 }
 
 export class AdRendererApiTester extends PluginApiTester {
-  initAdContents = (body: any) => this.post('/v1/ad_contents', body);
+  postAdContents = (body?: any) => this.post('/v1/ad_contents', body);
 }
 
 export class AudienceFeedApiTester extends PluginApiTester {
-  initExternalSegmentCreation = () => this.post('/v1/external_segment_creation').then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
-  initExternalSegmentConnection = () => this.post('/v1/external_segment_connection').then(_ => this.parseText<ExternalSegmentConnectionPluginResponse>(_));
-  initUserSegmentUpdate = () => this.post('/v1/user_segment_update').then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
+  postExternalSegmentCreation = (body?: any) => this.post('/v1/external_segment_creation', body).then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
+  postExternalSegmentConnection = (body?: any) => this.post('/v1/external_segment_connection', body).then(_ => this.parseText<ExternalSegmentConnectionPluginResponse>(_));
+  postUserSegmentUpdate = (body?: any) => this.post('/v1/user_segment_update', body).then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
 }
 
 export class BidOptimizerApiTester extends PluginApiTester {
-  initBidDecisions = (body: any) => this.post('/v1/bid_decisions', body).then(_ => this.parseText<BidOptimizerPluginResponse>(_));
+  postBidDecisions = (body?: any) => this.post('/v1/bid_decisions', body).then(_ => this.parseText<BidOptimizerPluginResponse>(_));
 }
 
 export class EmailRendererApiTester extends PluginApiTester {
-  initEmailContents = () => this.post('/v1/email_contents').then(_ => this.parseText<EmailRendererPluginResponse>(_));
+  postEmailContents = (body?: any) => this.post('/v1/email_contents', body).then(_ => this.parseText<EmailRendererPluginResponse>(_));
 }
 
 export class EmailRouterApiTester extends PluginApiTester {
-  initEmailRouting = (body: any) => this.post('/v1/email_routing', body).then(_ => this.parseText<EmailRoutingPluginResponse>(_));
-  initEmailCheck = () => this.post('/v1/email_router_check').then(_ => this.parseText<CheckEmailsPluginResponse>(_));
+  postEmailRouting = (body?: any) => this.post('/v1/email_routing', body).then(_ => this.parseText<EmailRoutingPluginResponse>(_));
+  postEmailCheck = (body?: any) => this.post('/v1/email_router_check', body).then(_ => this.parseText<CheckEmailsPluginResponse>(_));
 }
 
 export class RecommenderApiTester extends PluginApiTester {
-  initRecommendation = () => this.post('/v1/recommendations').then(_ => this.parseText<RecommenderPluginResponse>(_));
+  postRecommendation = (body?: any) => this.post('/v1/recommendations', body).then(_ => this.parseText<RecommenderPluginResponse>(_));
 }

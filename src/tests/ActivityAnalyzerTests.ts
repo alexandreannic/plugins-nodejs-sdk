@@ -1,10 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IActivityAnalyzerSdk} from '../mediarithmics/api/sdk/GatewaySdk';
-import {PluginApiTester} from '../helper';
+import {ActivityAnalyzerApiTester} from '../helper';
 
 describe('Fetch analyzer API', () => {
 
@@ -94,58 +93,42 @@ describe('Activity Analysis API test', function () {
 
   const plugin = new MyFakeSimpleActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple activityAnalysis handler', function (done) {
-    const tester = new PluginApiTester(plugin);
-    tester.initPlugin()
-    // We init the plugin
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-
-        const requestBody = JSON.parse(`{
-          "activity_analyzer_id": 1923,
-          "datamart_id": 1034,
-          "channel_id": "1268",
-          "activity": {
-            "$email_hash": null,
-            "$events": [
-              {
-                "$event_name": "page HP",
-                "$properties": {
-                  "$referrer": "https://www.google.fr/",
-                  "$url": "https://estcequecestbientotlapero.fr/",
-                  "produit": "SANTE",
-                  "session id": "tQ6GQojf"
-                },
-                "$ts": 1479820606900
-              }
-            ],
-            "$location": null,
-            "$session_duration": 302,
-            "$session_status": "CLOSED_SESSION",
-            "$site_id": "1268",
-            "$topics": {},
-            "$ts": 1479820606901,
-            "$ttl": 0,
-            "$type": "SITE_VISIT",
-            "$user_account_id": null,
-            "$user_agent_id": "vec:289388396"
+  it('Check that the plugin is giving good results with a simple activityAnalysis handler', async function () {
+    const tester = new ActivityAnalyzerApiTester(plugin);
+    await tester.init();
+    const requestBody = JSON.parse(`{
+      "activity_analyzer_id": 1923,
+      "datamart_id": 1034,
+      "channel_id": "1268",
+      "activity": {
+        "$email_hash": null,
+        "$events": [
+          {
+            "$event_name": "page HP",
+            "$properties": {
+              "$referrer": "https://www.google.fr/",
+              "$url": "https://estcequecestbientotlapero.fr/",
+              "produit": "SANTE",
+              "session id": "tQ6GQojf"
+            },
+            "$ts": 1479820606900
           }
-        }`);
+        ],
+        "$location": null,
+        "$session_duration": 302,
+        "$session_status": "CLOSED_SESSION",
+        "$site_id": "1268",
+        "$topics": {},
+        "$ts": 1479820606901,
+        "$ttl": 0,
+        "$type": "SITE_VISIT",
+        "$user_account_id": null,
+        "$user_agent_id": "vec:289388396"
+      }
+    }`);
 
-        request(plugin.app)
-          .post('/v1/activity_analysis')
-          .send(requestBody)
-          .end(function (err, res) {
-            expect(res.status).to.equal(200);
-
-            expect(JSON.parse(res.text).data).to.deep.eq(requestBody.activity);
-
-            done();
-          });
-      });
+    const res = await tester.postActivityAnalysis(requestBody);
+    expect(JSON.parse(res.text).data).to.deep.eq(requestBody.activity);
   });
 
   afterEach(() => {

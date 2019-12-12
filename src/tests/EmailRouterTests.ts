@@ -1,9 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IEmailRouterSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {EmailRouterApiTester} from '../helper';
 
 class MyFakeEmailRouterPlugin extends core.EmailRouterPlugin {
   protected onEmailRouting(
@@ -62,14 +62,9 @@ describe('Email Router API test', function () {
   });
   const plugin = new MyFakeEmailRouterPlugin({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple onEmailRouting handler', function (done) {
-    // We init the plugin
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-      });
+  it('Check that the plugin is giving good results with a simple onEmailRouting handler', async function () {
+    const tester = new EmailRouterApiTester(plugin);
+    await tester.init();
 
     const requestBody = JSON.parse(`{
       "email_router_id": "2",
@@ -131,22 +126,10 @@ describe('Email Router API test', function () {
       "data": {}
     }`);
 
-    request(plugin.app)
-      .post('/v1/email_router_check')
-      .send(requestBody)
-      .end(function (err, res) {
-        expect(res.status).to.equal(200);
-        expect(JSON.parse(res.text).result).to.be.true;
-
-        request(plugin.app)
-          .post('/v1/email_routing')
-          .send(requestBody)
-          .end(function (err, res) {
-            expect(res.status).to.equal(200);
-            expect(JSON.parse(res.text).result).to.be.true;
-            done();
-          });
-      });
+    const resCheck = await tester.postEmailCheck(requestBody);
+    expect(resCheck.parsedText.result).to.be.true;
+    const resRouting = await tester.postEmailRouting(requestBody);
+    expect(resRouting.parsedText.result).to.be.true;
   });
 
   afterEach(() => {

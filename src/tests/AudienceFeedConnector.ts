@@ -1,9 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {core} from '../';
-import * as request from 'supertest';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IAudienceFeedConnectorSdk} from '../mediarithmics/api/sdk/GatewaySdk';
+import {AudienceFeedApiTester} from '../helper';
 
 class MyFakeAudienceFeedConnector extends core.AudienceFeedConnectorBasePlugin {
   protected onExternalSegmentCreation(
@@ -87,15 +87,7 @@ describe('External Audience Feed API test', function () {
 
   const plugin = new MyFakeAudienceFeedConnector({gatewaySdk: gatewayMock});
 
-  it('Check that the plugin is giving good results with a simple handler', function (done) {
-    // We init the plugin
-    request(plugin.app)
-      .post('/v1/init')
-      .send({authentication_token: 'Manny', worker_id: 'Calavera'})
-      .end((err, res) => {
-        expect(res.status).to.equal(200);
-      });
-
+  it('Check that the plugin is giving good results with a simple handler', async function () {
     const externalSegmentCreation: core.ExternalSegmentCreationRequest = {
       feed_id: '42',
       datamart_id: '1023',
@@ -153,36 +145,17 @@ describe('External Audience Feed API test', function () {
         } as core.UserAgentIdentifierInfo
       ]
     };
+    const tester = new AudienceFeedApiTester(plugin);
+    await tester.init();
 
-    request(plugin.app)
-      .post('/v1/external_segment_creation')
-      .send(externalSegmentCreation)
-      .end(function (err, res) {
-        expect(res.status).to.equal(200);
+    const resCreation = await tester.postExternalSegmentCreation(externalSegmentCreation);
+    expect(resCreation.parsedText.status).to.be.eq('ok');
 
-        expect(JSON.parse(res.text).status).to.be.eq('ok');
+    const resConnection = await tester.postExternalSegmentConnection(externalSegmentConnection);
+    expect(resConnection.parsedText.status).to.be.eq('ok');
 
-        request(plugin.app)
-          .post('/v1/external_segment_connection')
-          .send(externalSegmentConnection)
-          .end(function (err, res) {
-            expect(res.status).to.equal(200);
-
-            expect(JSON.parse(res.text).status).to.be.eq('ok');
-
-            request(plugin.app)
-              .post('/v1/user_segment_update')
-              .send(userSegmentUpdateRequest)
-              .end(function (err, res) {
-                expect(res.status).to.equal(200);
-
-                expect(JSON.parse(res.text).status).to.be.eq('ok');
-
-                done();
-              });
-          });
-      });
-
+    const resUpdate = await tester.postUserSegmentUpdate(userSegmentUpdateRequest);
+    expect(resUpdate.parsedText.status).to.be.eq('ok');
   });
 
   afterEach(() => {
