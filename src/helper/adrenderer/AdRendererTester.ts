@@ -17,7 +17,7 @@ import {AdRendererApiTester} from '../PluginApiTester';
 import {Response} from 'supertest';
 import {adRendererFixtures} from './AdRendererFixtures';
 
-interface AdRendererTesterTest {
+interface AdRendererTesterProps {
   template: string,
   creative?: DisplayAd,
   properties?: PluginProperty[],
@@ -45,7 +45,7 @@ export class AdRendererRecoTester {
     return value.replace(/[&<>"'`=]/g, (chr: string) => escape[chr]);
   };
 
-  readonly test = async ({expectedResult, escape, ...props}: AdRendererTesterTest & {expectedResult: string, escape?: boolean}) => {
+  readonly test = async ({expectedResult, escape, ...props}: AdRendererTesterProps & {expectedResult: string, escape?: boolean}) => {
     const {compiledTemplate} = await this.process(props);
     return AdRendererRecoTester.compare(compiledTemplate, expectedResult, escape || true);
   };
@@ -56,7 +56,7 @@ export class AdRendererRecoTester {
     properties = adRendererFixtures.creativePropertiesResponse,
     recommendations = adRendererFixtures.recommendations,
     request = adRendererFixtures.adRequest,
-  }: AdRendererTesterTest): Promise<{
+  }: AdRendererTesterProps): Promise<{
     mock: GatewaySdkMock<IAdRendererSdk & IAdRendererRecoSdk & IBaseSdk>,
     response: Response
     compiledTemplate: string
