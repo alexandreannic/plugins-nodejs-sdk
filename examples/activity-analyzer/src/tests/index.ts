@@ -1,7 +1,7 @@
 import 'mocha';
 import {MyActivityAnalyzerPlugin} from '../MyPluginImpl';
-import {ActivityAnalyzer, IActivityAnalyzerSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import {ActivityAnalyzerApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {ActivityAnalyzer, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
+import {ActivityAnalyzerTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 import {expect} from 'chai';
 
 describe('Test Example Activity Analyzer', function () {
@@ -30,19 +30,10 @@ describe('Test Example Activity Analyzer', function () {
       artifact_id: 'default'
     };
 
-    const gatewayMock = newGatewaySdkMock<IActivityAnalyzerSdk>({
-      fetchActivityAnalyzer: Promise.resolve(activityAnalyzer),
-      fetchActivityAnalyzerProperties: Promise.resolve(activityAnalyzerProperties),
+    const equals = await new ActivityAnalyzerTester(MyActivityAnalyzerPlugin).test({
+      input: require(`${process.cwd()}/src/tests/activity_input`),
+      output: require(`${process.cwd()}/src/tests/activity_output`),
     });
-
-    const input = require(`${process.cwd()}/src/tests/activity_input`);
-    const output = require(`${process.cwd()}/src/tests/activity_output`);
-
-    const plugin = new MyActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
-    const tester = new ActivityAnalyzerApiTester(plugin);
-    await tester.init();
-    const res = await tester.postActivityAnalysis(input);
-    expect(res.parsedText).to.be.deep.equal(output);
-    plugin.pluginCache.clear();
+    expect(equals).true;
   });
 });

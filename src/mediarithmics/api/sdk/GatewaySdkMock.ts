@@ -19,7 +19,7 @@ type GatewaySdkMockCall<T> = {
   }
 }
 
-type GatewaySdkMock<T> = IGatewaySdk & {calledMethods: GatewaySdkMockCall<T>}
+export type GatewaySdkMock<T> = IGatewaySdk & {calledMethods: GatewaySdkMockCall<T>}
 
 export const newGatewaySdkMock = <T = Partial<IGatewaySdk>>(mocks: GatewaySdkMockProps<T>): GatewaySdkMock<T> => {
 
