@@ -7,7 +7,8 @@ import {
   CheckEmailsPluginResponse,
   EmailRendererPluginResponse,
   EmailRoutingPluginResponse,
-  ExternalSegmentConnectionPluginResponse, LogLevel,
+  ExternalSegmentConnectionPluginResponse,
+  LogLevel,
   RecommenderPluginResponse
 } from '../mediarithmics';
 
@@ -61,32 +62,44 @@ export class PluginApiTester {
 }
 
 export class ActivityAnalyzerApiTester extends PluginApiTester {
-  postActivityAnalysis = (body?: any) => this.post('/v1/activity_analysis', body).then(_ => this.parseText<ActivityAnalyzerPluginResponse>(_));
+  readonly postActivityAnalysis = (body?: any) => this.post('/v1/activity_analysis', body)
+    .then(_ => this.parseText<ActivityAnalyzerPluginResponse>(_));
 }
 
 export class AdRendererApiTester extends PluginApiTester {
-  postAdContents = (body?: any) => this.post('/v1/ad_contents', body);
+  readonly postAdContents = (body?: any) => this.post('/v1/ad_contents', body);
 }
 
 export class AudienceFeedApiTester extends PluginApiTester {
-  postExternalSegmentCreation = (body?: any) => this.post('/v1/external_segment_creation', body).then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
-  postExternalSegmentConnection = (body?: any) => this.post('/v1/external_segment_connection', body).then(_ => this.parseText<ExternalSegmentConnectionPluginResponse>(_));
-  postUserSegmentUpdate = (body?: any) => this.post('/v1/user_segment_update', body).then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
+  readonly postExternalSegmentCreation = (body?: any) => this.post('/v1/external_segment_creation', body)
+    .then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
+
+  readonly postExternalSegmentConnection = (body?: any) => this.post('/v1/external_segment_connection', body)
+    .then(_ => this.parseText<ExternalSegmentConnectionPluginResponse>(_));
+
+  readonly postUserSegmentUpdate = (body?: any) => this.post('/v1/user_segment_update', body)
+    .then(_ => this.parseText<AudienceFeedConnectorPluginResponse>(_));
 }
 
 export class BidOptimizerApiTester extends PluginApiTester {
-  postBidDecisions = (body?: any) => this.post('/v1/bid_decisions', body).then(_ => this.parseText<BidOptimizerPluginResponse>(_));
+  readonly postBidDecisions = (body?: any) => this.post('/v1/bid_decisions', body)
+    .then(_ => this.parseText<BidOptimizerPluginResponse>(_));
 }
 
 export class EmailRendererApiTester extends PluginApiTester {
-  postEmailContents = (body?: any) => this.post('/v1/email_contents', body).then(_ => this.parseText<EmailRendererPluginResponse>(_));
+  readonly postEmailContents = (body?: any) => this.post('/v1/email_contents', body)
+    .then(_ => this.parseText<EmailRendererPluginResponse>(_));
 }
 
 export class EmailRouterApiTester extends PluginApiTester {
-  postEmailRouting = (body?: any) => this.post('/v1/email_routing', body).then(_ => this.parseText<EmailRoutingPluginResponse>(_));
-  postEmailCheck = (body?: any) => this.post('/v1/email_router_check', body).then(_ => this.parseText<CheckEmailsPluginResponse>(_));
+  readonly postEmailRouting = (body?: any) => this.post('/v1/email_routing', body)
+    .then(_ => this.parseText<EmailRoutingPluginResponse>(_));
+
+  readonly postEmailCheck = (body?: any) => this.post('/v1/email_router_check', body)
+    .then(_ => this.parseText<CheckEmailsPluginResponse>(_));
 }
 
 export class RecommenderApiTester extends PluginApiTester {
-  postRecommendation = (body?: any) => this.post('/v1/recommendations', body).then(_ => this.parseText<RecommenderPluginResponse>(_));
+  readonly postRecommendation = (body?: any) => this.post('/v1/recommendations', body)
+    .then(_ => this.parseText<RecommenderPluginResponse>(_));
 }

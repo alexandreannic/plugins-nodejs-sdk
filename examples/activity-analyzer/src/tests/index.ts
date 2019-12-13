@@ -32,7 +32,7 @@ describe('Test Example Activity Analyzer', function () {
 
     const equals = await new ActivityAnalyzerTester(MyActivityAnalyzerPlugin).test({
       input: require(`${process.cwd()}/src/tests/activity_input`),
-      output: require(`${process.cwd()}/src/tests/activity_output`),
+      expectedOutput: require(`${process.cwd()}/src/tests/activity_output`),
     });
     expect(equals).true;
   });

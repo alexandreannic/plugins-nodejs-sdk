@@ -1,13 +1,6 @@
-import {IGatewaySdk} from './GatewaySdk';
+import {GatewaySdk, IGatewaySdk} from './GatewaySdk';
 
-// Utils type than extract type wrapped in a promise, e.g:
-// const func = () => Promise.resolve(1);
-// const x: ThenArg<typeof func> = await func();
-type ThenArg<T> = T extends Promise<infer U>
-  ? U
-  : T extends ((...args: any[]) => Promise<infer V>) ? V : T
-
-// Tell to the compiler that M is a key of IGatewaySdk and return the related function
+// Equivalent to `IGatewaySdk[M]` but this one won't fail at compile time !
 type SdkMethod<M> = IGatewaySdk[Extract<M, keyof IGatewaySdk>];
 
 type GatewaySdkMockProps<T> = { [K in keyof T]: ReturnType<SdkMethod<K>> | ReturnType<SdkMethod<K>>[] }
@@ -22,48 +15,41 @@ type GatewaySdkMockCall<T> = {
 export type GatewaySdkMock<T> = IGatewaySdk & {calledMethods: GatewaySdkMockCall<T>}
 
 export const newGatewaySdkMock = <T = Partial<IGatewaySdk>>(mocks: GatewaySdkMockProps<T>): GatewaySdkMock<T> => {
+  const calledArgs: { [K in keyof GatewaySdkMockProps<T>]: any[][] } = {} as any;
+  const callsCounter: { [K in keyof GatewaySdkMockProps<T>]: number } = {} as any;
+  const calledMethods: GatewaySdkMockCall<T> = {} as any;
+  const mockedFunctions: { [K in keyof IGatewaySdk]: (...args: any[]) => Promise<any> } = {} as any;
 
-  const methods = Object.keys(mocks) as (keyof GatewaySdkMockProps<T>)[];
+  const allSdkMethods = (() => {
+    // @ts-ignore
+    const gatewaySdk = new GatewaySdk;
+    return Object.getOwnPropertyNames(gatewaySdk) as Array<keyof IGatewaySdk>;
+  })();
 
-  const initObject = <I>(initializer: (name: keyof GatewaySdkMockProps<T>) => I): { [key in keyof T]: I } => {
-    return methods.reduce((acc: { [K in keyof T]: I }, funcName: keyof GatewaySdkMockProps<T>) => {
-      acc[funcName] = initializer(funcName);
-      return acc;
-    }, {} as { [K in keyof T]: I });
-  };
-
-  const getMockedValue = (funcName: keyof GatewaySdkMockProps<T>, callCount: number): any => {
-    const mock = mocks[funcName];
-    return Array.isArray(mock) ? mock[callCount] : mock;
-  };
-
-  const calledArgs = initObject<any[]>(funcName => []);
-  const callsCounter = initObject(funcName => 0);
-  const calledMethods: GatewaySdkMockCall<T> = initObject(funcName => ({
-    getArgs: (callNumber: number) => calledArgs[funcName][callNumber],
-    calledTime: () => calledArgs[funcName].length,
-  }));
-  const mockedFunctions = initObject(funcName => (...args: any[]) => {
-    calledArgs[funcName].push(args);
-    return getMockedValue(funcName, callsCounter[funcName]++);
+  allSdkMethods.forEach((method) => {
+    const mockedMethod: keyof T | undefined = mocks[method as keyof T] ? method as keyof T : undefined;
+    if (mockedMethod) {
+      calledArgs[mockedMethod] = [];
+      callsCounter[mockedMethod] = 0;
+      calledMethods[mockedMethod] = {
+        getArgs: (callNumber: number) => calledArgs[mockedMethod][callNumber] as any,
+        calledTime: () => calledArgs[mockedMethod].length,
+      };
+    }
+    mockedFunctions[method] = (...args: any[]) => {
+      if (!mockedMethod) {
+        throw new Error(`No mock response provided for the GatewaySdk method ${method}.`);
+      }
+      calledArgs[mockedMethod].push(args);
+      const getMockedValue = (func: keyof GatewaySdkMockProps<T>, callCount: number): any => {
+        const mock = mocks[func];
+        return Array.isArray(mock) ? mock[callCount] : mock;
+      };
+      return getMockedValue(mockedMethod, callsCounter[mockedMethod]++);
+    };
   });
-
-  // const mocked = methods.reduce((acc: GatewaySdkMock<T>, name: keyof GatewaySdkMockProps<T>) => {
-  //   callsCounter[name] = 0;
-  //   calledArgs[name] = [];
-  //   calledMethods[name] = {
-  //     getArgs: (callNumber: number) => calledArgs[name][callNumber],
-  //     calledTime: () => calledArgs[name].length,
-  //   };
-  //   acc[name] = ((...args: any[]) => {
-  //     calledArgs[name].push(args);
-  //     return Promise.resolve(mocks[name]);
-  //   }) as any;
-  //   return acc;
-  // }, {} as GatewaySdkMock<T>);
-
   return {
-    ...mockedFunctions as unknown as IGatewaySdk,
+    ...mockedFunctions,
     calledMethods,
   };
 };
