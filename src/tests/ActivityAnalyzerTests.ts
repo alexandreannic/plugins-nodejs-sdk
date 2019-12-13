@@ -3,7 +3,7 @@ import 'mocha';
 import {core} from '../';
 import {newGatewaySdkMock} from '../mediarithmics/api/sdk/GatewaySdkMock';
 import {IActivityAnalyzerSdk} from '../mediarithmics/api/sdk/GatewaySdk';
-import {ActivityAnalyzerApiTester} from '../helper';
+import {ActivityAnalyzerTester} from '../helper';
 
 describe('Fetch analyzer API', () => {
 
@@ -68,34 +68,8 @@ describe('Activity Analysis API test', function () {
     }
   }
 
-  const gatewayMock = newGatewaySdkMock<IActivityAnalyzerSdk>({
-    fetchActivityAnalyzer: Promise.resolve({
-      id: '42',
-      organisation_id: '1001',
-      name: 'Yolo',
-      group_id: '5445',
-      artifact_id: '5441',
-      visit_analyzer_plugin_id: 555777
-    }),
-    fetchActivityAnalyzerProperties: Promise.resolve([
-      {
-        technical_name: 'hello_world',
-        value: {
-          value: 'Yay'
-        },
-        property_type: 'STRING',
-        origin: 'PLUGIN',
-        writable: true,
-        deletable: false
-      }
-    ])
-  });
-
-  const plugin = new MyFakeSimpleActivityAnalyzerPlugin({gatewaySdk: gatewayMock});
-
   it('Check that the plugin is giving good results with a simple activityAnalysis handler', async function () {
-    const tester = new ActivityAnalyzerApiTester(plugin);
-    await tester.init();
+
     const requestBody = JSON.parse(`{
       "activity_analyzer_id": 1923,
       "datamart_id": 1034,
@@ -127,12 +101,29 @@ describe('Activity Analysis API test', function () {
       }
     }`);
 
-    const res = await tester.postActivityAnalysis(requestBody);
-    expect(JSON.parse(res.text).data).to.deep.eq(requestBody.activity);
-  });
-
-  afterEach(() => {
-    // We clear the cache so that we don't have any processing still running in the background
-    plugin.pluginCache.clear();
+    const output = await new ActivityAnalyzerTester(MyFakeSimpleActivityAnalyzerPlugin).process({
+      input: requestBody,
+      activityAnalyzer: {
+        id: '42',
+        organisation_id: '1001',
+        name: 'Yolo',
+        group_id: '5445',
+        artifact_id: '5441',
+        visit_analyzer_plugin_id: 555777
+      },
+      properties: [
+        {
+          technical_name: 'hello_world',
+          value: {
+            value: 'Yay'
+          },
+          property_type: 'STRING',
+          origin: 'PLUGIN',
+          writable: true,
+          deletable: false
+        }
+      ]
+    });
+    expect(ActivityAnalyzerTester.compare(requestBody.activity, output.data)).true;
   });
 });

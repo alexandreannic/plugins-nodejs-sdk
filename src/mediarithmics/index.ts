@@ -1,5 +1,6 @@
 export * from './api/core/bidoptimizer/BidOptimizerInterface';
 export * from './api/core/common/Response';
+export * from './api/core/common/LogLevel';
 export * from './api/core/audiencesegment/AudienceSegmentInterface';
 export * from './api/core/datamart/Datamart';
 export * from './api/core/creative';

@@ -7,11 +7,9 @@ import {
   CheckEmailsPluginResponse,
   EmailRendererPluginResponse,
   EmailRoutingPluginResponse,
-  ExternalSegmentConnectionPluginResponse,
+  ExternalSegmentConnectionPluginResponse, LogLevel,
   RecommenderPluginResponse
 } from '../mediarithmics';
-
-type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug' | 'silly'
 
 export interface PluginApiResponse<T> extends Response {
   parsedText: T
