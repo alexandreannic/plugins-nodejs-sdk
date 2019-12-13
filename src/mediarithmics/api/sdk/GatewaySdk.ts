@@ -105,11 +105,6 @@ export class GatewaySdk implements IGatewaySdk {
       .then(_ => _.type === 'DISPLAY_AD' ? _ : Promise.reject(`crid: ${displayAdId} - When fetching DisplayAd, another creative type was returned!`));
   };
 
-
-  /**
-   * Merge with other one
-   * @deprecated
-   */
   readonly fetchDisplayAdProperties = async (displayAdId: string, forceReload = false): Promise<PluginProperty[]> => {
     return this.client.get(`/v1/creatives/${displayAdId}/renderer_properties`, {qs: {'force-reload': forceReload}}).then(mapData);
   };
@@ -186,7 +181,6 @@ export class GatewaySdk implements IGatewaySdk {
 
   /**
    * Helper to fetch the creative resource with caching
-   * @deprecated
    */
   readonly fetchCreative = async (id: string, forceReload = false): Promise<Creative> => {
     return this.client.get(`/v1/creatives/${id}`, {qs: {'force-reload': forceReload}}).then(mapData);
