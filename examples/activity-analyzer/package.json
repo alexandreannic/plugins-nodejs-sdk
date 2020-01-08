@@ -28,6 +28,6 @@
     "mocha": "^6.1.4",
     "mockery": "^2.1.0",
     "proxyquire": "^2.1.0",
-    "typescript": "^3.5.2"
+    "typescript": "^3.7.4"
   }
 }
