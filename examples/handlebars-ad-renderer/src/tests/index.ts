@@ -1,11 +1,10 @@
 import {expect} from 'chai';
 import 'mocha';
-import {AdRendererRequest, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
+import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
 import {MyHandlebarsAdRenderer} from '../MyPluginImpl';
-import {adRendererFixtures, AdRendererRecoTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
 
 describe('Test Example Handlebar Ad Renderer', function () {
-  const tester = new AdRendererRecoTester(MyHandlebarsAdRenderer);
+  const tester = new helper.AdRendererRecoTester(MyHandlebarsAdRenderer);
   it('Check overall execution of dummy handlebar adRenderer', async function () {
     const template: string = `Hello World!`;
     const {mock, parameters} = await tester.process({template});
@@ -35,7 +34,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
     ];
 
     expect(urlsFromHandlebar).to.be.deep.eq(
-      correctUrls.map(AdRendererRecoTester.escape)
+      correctUrls.map(helper.AdRendererRecoTester.escape)
     );
   });
 
@@ -48,13 +47,13 @@ describe('Test Example Handlebar Ad Renderer', function () {
   it('Check toJson macro', async function () {
     const template: string = `{{toJson REQUEST}}`;
     const {compiledTemplate, parameters} = await tester.process({template});
-    expect(compiledTemplate).to.be.eq(AdRendererRecoTester.escape(JSON.stringify(parameters.request)));
+    expect(compiledTemplate).to.be.eq(helper.AdRendererRecoTester.escape(JSON.stringify(parameters.request)));
   });
 
   it('Check displayTracking', async function () {
     const template: string = `{{REQUEST.display_tracking_url}}`;
     const {compiledTemplate, parameters} = await tester.process({template});
-    expect(compiledTemplate).to.be.eq(AdRendererRecoTester.escape(parameters.request.display_tracking_url));
+    expect(compiledTemplate).to.be.eq(helper.AdRendererRecoTester.escape(parameters.request.display_tracking_url));
   });
 
   it('Check Headers', async function () {
@@ -73,7 +72,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
 
   it('Check that the plugin doesn\'t fail without any recommenderId provided', async function () {
     const template: string = `Hello World!`;
-    const creativePropertiesResponseWithoutRecommenderId: PluginProperty[] = [
+    const creativePropertiesResponseWithoutRecommenderId: core.PluginProperty[] = [
       {
         technical_name: 'click_url',
         value: {
@@ -142,7 +141,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
 
   it('Check if plugin doesn\'t fail without any user_agent_id', async function () {
     const template: string = `Hello World!`;
-    const adRequest2: AdRendererRequest = {...adRendererFixtures.adRequest, user_agent_id: null};
+    const adRequest2: core.AdRendererRequest = {...helper.adRendererFixtures.adRequest, user_agent_id: null};
     const {mock} = await tester.process({template, request: adRequest2});
     expect(mock.calledMethods.fetchRecommendations.getArgs(0)?.[1] === adRequest2.user_agent_id);
   });

@@ -1,19 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
-import {EmailRouterApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
-import {
-  EmailRoutingRequest,
-  IEmailRouterSdk,
-  newGatewaySdkMock,
-  PluginProperty,
-  UserAccountIdentifierInfo,
-  UserAgentIdentifierInfo,
-  UserEmailIdentifierInfo,
-  UserPointIdentifierInfo
-} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
+import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
 import {MailjetSentResponse, MySimpleEmailRouter} from '../MyPluginImpl';
 
-const emailRouterProperties: PluginProperty[] = [
+const emailRouterProperties: core.PluginProperty[] = [
   {
     technical_name: 'authentication_token',
     value: {
@@ -39,13 +29,13 @@ describe('Test Example Email Router', function () {
 
   it('Check behavior of dummy Email Router', async function () {
 
-    const gatewayMock = newGatewaySdkMock<IEmailRouterSdk>({
+    const gatewayMock = core.newGatewaySdkMock<core.IEmailRouterSdk>({
       sendEmail: Promise.resolve(mjResponse),
       fetchEmailRouterProperties: Promise.resolve(emailRouterProperties),
     });
 
     const plugin = new MySimpleEmailRouter({gatewaySdk: gatewayMock});
-    const emailRoutingRequest: EmailRoutingRequest = {
+    const emailRoutingRequest: core.EmailRoutingRequest = {
       email_router_id: '2',
       call_id: 'ba568918-2f06-4f16-bd0e-f50e04b92d34',
       context: 'LIVE',
@@ -57,12 +47,12 @@ describe('Test Example Email Router', function () {
         {
           type: 'USER_POINT',
           user_point_id: '26340584-f777-404c-82c5-56220667464b'
-        } as UserPointIdentifierInfo,
+        } as core.UserPointIdentifierInfo,
         {
           type: 'USER_ACCOUNT',
           user_account_id: '914eb2aa50cef7f3a8705b6bb54e50bb',
           creation_ts: 123456
-        } as UserAccountIdentifierInfo,
+        } as core.UserAccountIdentifierInfo,
         {
           type: 'USER_EMAIL',
           hash: 'e2749f6f4d8104ec385a75490b587c86',
@@ -71,7 +61,7 @@ describe('Test Example Email Router', function () {
           creation_ts: 1493118667529,
           last_activity_ts: 1493127642622,
           providers: []
-        } as UserEmailIdentifierInfo,
+        } as core.UserEmailIdentifierInfo,
         {
           type: 'USER_AGENT',
           vector_id: 'vec:886742516',
@@ -88,7 +78,7 @@ describe('Test Example Email Router', function () {
           last_activity_ts: 1493126966889,
           providers: [],
           mappings: []
-        } as UserAgentIdentifierInfo
+        } as core.UserAgentIdentifierInfo
       ],
       meta: {
         from_email: 'news@info.velvetconsulting.paris',
@@ -105,7 +95,7 @@ describe('Test Example Email Router', function () {
       data: '{}'
     };
 
-    const tester = new EmailRouterApiTester(plugin);
+    const tester = new helper.EmailRouterApiTester(plugin);
     await tester.initAndSetLogLevel('debug');
     const res = await tester.postEmailRouting(emailRoutingRequest);
     expect(res.parsedText.result).to.be.true;
@@ -114,7 +104,7 @@ describe('Test Example Email Router', function () {
   it('Check the Email Routeur retry', async function () {
 
     this.timeout(50000);
-    const gatewayMock = newGatewaySdkMock<IEmailRouterSdk>({
+    const gatewayMock = core.newGatewaySdkMock<core.IEmailRouterSdk>({
       sendEmail: [
         Promise.reject('Fake error'),
         Promise.resolve({Sent: []}),
@@ -124,7 +114,7 @@ describe('Test Example Email Router', function () {
     });
     const plugin = new MySimpleEmailRouter({gatewaySdk: gatewayMock});
 
-    const emailRoutingRequest: EmailRoutingRequest = {
+    const emailRoutingRequest: core.EmailRoutingRequest = {
       email_router_id: '2',
       call_id: 'ba568918-2f06-4f16-bd0e-f50e04b92d34',
       context: 'LIVE',
@@ -136,12 +126,12 @@ describe('Test Example Email Router', function () {
         {
           type: 'USER_POINT',
           user_point_id: '26340584-f777-404c-82c5-56220667464b'
-        } as UserPointIdentifierInfo,
+        } as core.UserPointIdentifierInfo,
         {
           type: 'USER_ACCOUNT',
           user_account_id: '914eb2aa50cef7f3a8705b6bb54e50bb',
           creation_ts: 123456
-        } as UserAccountIdentifierInfo,
+        } as core.UserAccountIdentifierInfo,
         {
           type: 'USER_EMAIL',
           hash: 'e2749f6f4d8104ec385a75490b587c86',
@@ -150,7 +140,7 @@ describe('Test Example Email Router', function () {
           creation_ts: 1493118667529,
           last_activity_ts: 1493127642622,
           providers: []
-        } as UserEmailIdentifierInfo,
+        } as core.UserEmailIdentifierInfo,
         {
           type: 'USER_AGENT',
           vector_id: 'vec:886742516',
@@ -167,7 +157,7 @@ describe('Test Example Email Router', function () {
           last_activity_ts: 1493126966889,
           providers: [],
           mappings: []
-        } as UserAgentIdentifierInfo
+        } as core.UserAgentIdentifierInfo
       ],
       meta: {
         from_email: 'news@info.velvetconsulting.paris',
@@ -184,7 +174,7 @@ describe('Test Example Email Router', function () {
       data: '{}'
     };
 
-    const tester = new EmailRouterApiTester(plugin);
+    const tester = new helper.EmailRouterApiTester(plugin);
     await tester.initAndSetLogLevel('debug');
     const res = await tester.postEmailRouting(emailRoutingRequest);
     expect(res.parsedText.result).to.be.true;

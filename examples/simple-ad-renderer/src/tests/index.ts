@@ -1,10 +1,9 @@
 import {expect} from 'chai';
 import 'mocha';
 import {MySimpleAdRenderer} from '../MyPluginImpl';
-import {AdRendererRequest, DisplayAd, IAdRendererSdk, newGatewaySdkMock, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import {AdRendererApiTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
 
-const creative: DisplayAd = {
+const creative: core.DisplayAd = {
   type: 'DISPLAY_AD',
   id: '7168',
   organisation_id: '1126',
@@ -26,7 +25,7 @@ const creative: DisplayAd = {
   format: '',
 };
 
-const creativePropertiesResponse: PluginProperty[] = [
+const creativePropertiesResponse: core.PluginProperty[] = [
   {
     technical_name: 'click_url',
     value: {
@@ -96,12 +95,12 @@ const creativePropertiesResponse: PluginProperty[] = [
   }
 ];
 
-const gatewayMock = newGatewaySdkMock<IAdRendererSdk>({
+const gatewayMock = core.newGatewaySdkMock<core.IAdRendererSdk>({
   fetchDisplayAd: Promise.resolve(creative),
   fetchDisplayAdProperties: Promise.resolve(creativePropertiesResponse),
 });
 
-const adRequest: AdRendererRequest = {
+const adRequest: core.AdRendererRequest = {
   call_id: 'auc:goo:58346725000689de0a16ac4f120ecc41-0',
   context: 'LIVE',
   creative_id: '2757',
@@ -143,7 +142,7 @@ describe('Test Example Handlebar Ad Renderer', function () {
   it('Check overall execution of dummy handlebar adRenderer', async function () {
     const plugin = new MySimpleAdRenderer({gatewaySdk: gatewayMock});
 
-    const tester = new AdRendererApiTester(plugin);
+    const tester = new helper.AdRendererApiTester(plugin);
     await tester.initAndSetLogLevel('silly');
     const res = await tester.postAdContents(adRequest);
     expect(res.header['x-mics-display-context']).to.eq('{"hello":"\\u2764"}');

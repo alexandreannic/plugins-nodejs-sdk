@@ -1,12 +1,11 @@
 import 'mocha';
 import {MyActivityAnalyzerPlugin} from '../MyPluginImpl';
-import {ActivityAnalyzer, PluginProperty} from '@mediarithmics/plugins-nodejs-sdk/lib/mediarithmics';
-import {ActivityAnalyzerTester} from '@mediarithmics/plugins-nodejs-sdk/lib/helper';
+import {core, helper} from '@mediarithmics/plugins-nodejs-sdk';
 import {expect} from 'chai';
 
 describe('Test Example Activity Analyzer', function () {
   it('Check behavior of dummy activity analyzer', async function () {
-    const activityAnalyzerProperties: PluginProperty[] = [
+    const activityAnalyzerProperties: core.PluginProperty[] = [
       {
         technical_name: 'analyzer_rules',
         value: {
@@ -21,7 +20,7 @@ describe('Test Example Activity Analyzer', function () {
       }
     ];
 
-    const activityAnalyzer: ActivityAnalyzer = {
+    const activityAnalyzer: core.ActivityAnalyzer = {
       id: '1000',
       name: 'my analyzer',
       organisation_id: '1000',
@@ -30,7 +29,7 @@ describe('Test Example Activity Analyzer', function () {
       artifact_id: 'default'
     };
 
-    const equals = await new ActivityAnalyzerTester(MyActivityAnalyzerPlugin).test({
+    const equals = await new helper.ActivityAnalyzerTester(MyActivityAnalyzerPlugin).test({
       input: require(`${process.cwd()}/src/tests/activity_input`),
       expectedOutput: require(`${process.cwd()}/src/tests/activity_output`),
     });
